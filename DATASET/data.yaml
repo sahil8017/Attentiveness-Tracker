@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 3
+names: ['Bored', 'Engaged', 'Sleepy']
+
+roboflow:
+  workspace: attentiveness50k
+  project: attention50k
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/attentiveness50k/attention50k/dataset/2
