@@ -1,0 +1,9 @@
+pandas==2.2.2 
+numpy==1.26.4 
+opencv-python==4.9.0.80 
+tensorflow==2.16.1 
+keras==3.3.3 # If you are using Keras 3 (standalone); otherwise, tensorflow might suffice.
+matplotlib==3.8.4 
+seaborn==0.13.2 
+scikit-learn==1.4.2 
+streamlit==1.33.0 
