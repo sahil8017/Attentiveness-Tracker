@@ -1,0 +1,8 @@
+flask==3.0.0
+opencv-python==4.9.0.80
+roboflow==1.1.29
+pandas==2.2.2
+matplotlib==3.8.4
+seaborn==0.13.2
+numpy==1.26.4
+pillow==10.1.0

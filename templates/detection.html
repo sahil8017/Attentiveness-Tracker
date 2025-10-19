@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Detection - Attentiveness Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-indigo-600">🎯 Attentiveness Tracker</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Home</a>
+                    <a href="/detection" class="text-indigo-600 px-3 py-2 rounded-md font-medium border-b-2 border-indigo-600">Detection</a>
+                    <a href="/dashboard" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">Live Attentiveness Detection</h2>
+            
+            <!-- Status Indicator -->
+            <div id="status" class="mb-6 p-4 rounded-lg text-center font-semibold">
+                <span id="statusText">Click "Start Detection" to begin</span>
+            </div>
+
+            <!-- Video and Canvas Container -->
+            <div class="relative mx-auto mb-6" style="max-width: 640px;">
+                <video id="webcam" width="640" height="480" autoplay class="rounded-lg shadow-md"></video>
+                <canvas id="canvas" width="640" height="480" class="absolute top-0 left-0 rounded-lg"></canvas>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-center space-x-4 mb-6">
+                <button id="startBtn" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 shadow-md">
+                    ✅ Start Detection
+                </button>
+                <button id="stopBtn" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition duration-300 shadow-md" disabled>
+                    🛑 Stop Detection
+                </button>
+            </div>
+
+            <!-- Stats Panel -->
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-indigo-50 p-4 rounded-lg text-center">
+                    <p class="text-gray-600 text-sm mb-1">Frames Processed</p>
+                    <p id="frameCount" class="text-3xl font-bold text-indigo-600">0</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg text-center">
+                    <p class="text-gray-600 text-sm mb-1">Current State</p>
+                    <p id="currentState" class="text-2xl font-bold text-green-600">-</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                    <p class="text-gray-600 text-sm mb-1">Confidence</p>
+                    <p id="confidence" class="text-3xl font-bold text-blue-600">-</p>
+                </div>
+            </div>
+
+            <!-- Alert Message -->
+            <div id="alertMessage" class="mt-6 p-4 rounded-lg bg-yellow-100 border-l-4 border-yellow-500 hidden">
+                <p class="font-semibold text-yellow-800">⚠️ Alert: Signs of sleepiness or boredom detected!</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Audio Element for Alert Sound -->
+    <audio id="alertSound" preload="auto">
+        <source src="{{ url_for('static', filename='alert.mp3') }}" type="audio/mpeg">
+    </audio>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
