@@ -1,198 +1,368 @@
-from flask import Flask, render_template, request, jsonify
+"""
+Attentiveness Tracker — Flask Application
+==========================================
+Real-time attentiveness detection using Roboflow AI with session management,
+temporal smoothing, and interactive analytics.
+"""
+
 import cv2
 import base64
-import numpy as np
-from roboflow import Roboflow
-import pandas as pd
-from datetime import datetime
-from pathlib import Path
 import uuid
-import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend for servers
-import matplotlib.pyplot as plt
-import seaborn as sns
+import logging
+import json
+import csv
+import io
+import numpy as np
+from collections import deque
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, Response
+from roboflow import Roboflow
 
-# === CONFIGURATION ===
-BASE_DIR = Path(__file__).resolve().parent
-API_KEY = "CRO2jervxUZh1DbxqL37"  # Replace with your actual Roboflow API key
-CSV_LOG_PATH = BASE_DIR / "attentiveness_log.csv"
-PLOTS_DIR = BASE_DIR / "static" / "images"
+from config import Config
+from database import Database
 
-# Ensure necessary directories exist
-PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+# === LOGGING ===
+Config.validate()
+Config.LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(Config.LOGS_DIR / "app.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # === INITIALIZATION ===
 app = Flask(__name__)
+app.secret_key = Config.SECRET_KEY
 
-# Initialize Roboflow model
-rf = Roboflow(api_key=API_KEY)
-project = rf.workspace().project("attention50k")
-model = project.version(2).model
+# Database
+db = Database(Config.DATABASE_PATH)
 
-# Initialize CSV log file if missing
-if not CSV_LOG_PATH.exists():
-    df = pd.DataFrame(columns=["Time", "Class", "Confidence", "Frame_ID"])
-    df.to_csv(CSV_LOG_PATH, index=False)
+# Migrate existing CSV if present
+csv_path = Config.BASE_DIR / "attentiveness_log.csv"
+if csv_path.exists():
+    count = db.migrate_from_csv(csv_path)
+    if count > 0:
+        logger.info(f"Migrated {count} records from CSV to database")
 
-frame_counter = {"count": 0}
+# Roboflow model
+logger.info("Loading Roboflow model...")
+rf = Roboflow(api_key=Config.ROBOFLOW_API_KEY)
+project = rf.workspace().project(Config.ROBOFLOW_PROJECT)
+model = project.version(Config.ROBOFLOW_VERSION).model
+logger.info("Roboflow model loaded successfully")
 
-# === ROUTES ===
-@app.route('/')
+# === IN-MEMORY STATE ===
+# Per-session smoothing buffers: { session_id: deque([class1, class2, ...]) }
+smoothing_buffers = {}
+frame_counters = {}
+alert_counters = {}  # Consecutive inattentive frame counts per session
+
+
+def get_smoothed_class(session_id, raw_class):
+    """Apply temporal smoothing using majority vote over recent predictions."""
+    if session_id not in smoothing_buffers:
+        smoothing_buffers[session_id] = deque(maxlen=Config.SMOOTHING_WINDOW)
+
+    smoothing_buffers[session_id].append(raw_class)
+    buffer = smoothing_buffers[session_id]
+
+    # Majority vote
+    from collections import Counter
+    counts = Counter(buffer)
+    return counts.most_common(1)[0][0]
+
+
+def check_frame_quality(frame):
+    """Check if frame is too blurry using Laplacian variance."""
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+    return variance >= Config.BLUR_THRESHOLD, round(variance, 1)
+
+
+def should_alert(session_id, smoothed_class):
+    """Only alert after consecutive inattentive frames exceed threshold."""
+    alert_classes = ["sleepy", "bored"]
+
+    if session_id not in alert_counters:
+        alert_counters[session_id] = 0
+
+    if smoothed_class in alert_classes:
+        alert_counters[session_id] += 1
+    else:
+        alert_counters[session_id] = 0
+
+    return alert_counters[session_id] >= Config.ALERT_CONSECUTIVE_FRAMES
+
+
+# === PAGE ROUTES ===
+
+@app.route("/")
 def index():
-    """Homepage"""
-    return render_template('index.html')
+    """Homepage."""
+    return render_template("index.html")
 
-@app.route('/detection')
+
+@app.route("/detection")
 def detection():
-    """Live detection page"""
-    return render_template('detection.html')
+    """Live detection page."""
+    return render_template("detection.html", config={
+        "confidence_threshold": Config.CONFIDENCE_THRESHOLD,
+        "smoothing_window": Config.SMOOTHING_WINDOW,
+        "alert_consecutive_frames": Config.ALERT_CONSECUTIVE_FRAMES
+    })
 
-@app.route('/dashboard')
+
+@app.route("/dashboard")
 def dashboard():
-    """Analytics dashboard page"""
-    return render_template('dashboard.html')
+    """Analytics dashboard page."""
+    return render_template("dashboard.html")
+
 
 # === API ENDPOINTS ===
-@app.route('/predict', methods=['POST'])
+
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    """Health check endpoint."""
+    return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()})
+
+
+@app.route("/api/sessions", methods=["POST"])
+def create_session():
+    """Create a new detection session."""
+    try:
+        session_id = f"session-{uuid.uuid4().hex[:12]}"
+        db.create_session(session_id)
+        smoothing_buffers[session_id] = deque(maxlen=Config.SMOOTHING_WINDOW)
+        frame_counters[session_id] = 0
+        alert_counters[session_id] = 0
+        logger.info(f"Session created: {session_id}")
+        return jsonify({"success": True, "session_id": session_id})
+    except Exception as e:
+        logger.error(f"Error creating session: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/sessions/<session_id>/end", methods=["POST"])
+def end_session(session_id):
+    """End a detection session."""
+    try:
+        score = db.end_session(session_id)
+        # Cleanup in-memory state
+        smoothing_buffers.pop(session_id, None)
+        frame_counters.pop(session_id, None)
+        alert_counters.pop(session_id, None)
+        logger.info(f"Session ended: {session_id}, score: {score}%")
+        return jsonify({"success": True, "attention_score": score})
+    except Exception as e:
+        logger.error(f"Error ending session: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/sessions", methods=["GET"])
+def list_sessions():
+    """List recent detection sessions."""
+    try:
+        limit = request.args.get("limit", 20, type=int)
+        sessions = db.get_sessions(limit=limit)
+        return jsonify({"success": True, "sessions": sessions})
+    except Exception as e:
+        logger.error(f"Error listing sessions: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/predict", methods=["POST"])
 def predict():
     """
-    Receives a base64 image and returns Roboflow predictions.
+    Receives a base64 image and returns Roboflow predictions
+    with temporal smoothing and quality checks.
     """
     try:
         data = request.get_json()
-        if not data or 'image' not in data:
-            return jsonify({'error': 'No image data provided'}), 400
+        if not data or "image" not in data:
+            return jsonify({"error": "No image data provided"}), 400
+
+        session_id = data.get("session_id", "default")
+
+        # Initialize frame counter for session
+        if session_id not in frame_counters:
+            frame_counters[session_id] = 0
 
         # Decode base64 image
-        img_data = data['image'].split(',')[1]
+        img_data = data["image"].split(",")[1]
         img_bytes = base64.b64decode(img_data)
         nparr = np.frombuffer(img_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
-            return jsonify({'error': 'Invalid image data'}), 400
+            return jsonify({"error": "Invalid image data"}), 400
 
-        # Save temporary frame
-        frame_counter["count"] += 1
-        temp_path = BASE_DIR / f"temp_frame_{uuid.uuid4().hex}.jpg"
+        # Frame quality check
+        is_clear, blur_score = check_frame_quality(frame)
+        if not is_clear:
+            return jsonify({
+                "success": True,
+                "skipped": True,
+                "reason": "Frame too blurry",
+                "blur_score": blur_score,
+                "predictions": []
+            })
+
+        # Increment frame counter
+        frame_counters[session_id] += 1
+        frame_id = frame_counters[session_id]
+
+        # Save temporary frame for Roboflow
+        temp_path = Config.TEMP_DIR / f"frame_{uuid.uuid4().hex}.jpg"
         cv2.imwrite(str(temp_path), frame)
 
         # Roboflow prediction
-        prediction = model.predict(str(temp_path), confidence=40, overlap=30).json()
+        prediction = model.predict(
+            str(temp_path),
+            confidence=Config.CONFIDENCE_THRESHOLD,
+            overlap=Config.OVERLAP_THRESHOLD
+        ).json()
 
         # Delete temp image
         if temp_path.exists():
             temp_path.unlink()
 
-        # Log predictions
-        for pred in prediction.get('predictions', []):
-            log_df = pd.DataFrame([{
-                "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Class": pred['class'].lower(),
-                "Confidence": round(pred['confidence'], 2),
-                "Frame_ID": frame_counter["count"]
-            }])
-            log_df.to_csv(CSV_LOG_PATH, mode='a', header=False, index=False)
+        # Process predictions with smoothing
+        processed_predictions = []
+        trigger_alert = False
+
+        for pred in prediction.get("predictions", []):
+            raw_class = pred["class"].lower()
+            confidence = round(pred["confidence"], 3)
+
+            # Temporal smoothing
+            smoothed = get_smoothed_class(session_id, raw_class)
+
+            # Check alert condition
+            if should_alert(session_id, smoothed):
+                trigger_alert = True
+
+            # Log to database
+            db.log_detection(session_id, raw_class, confidence, frame_id, smoothed)
+
+            processed_predictions.append({
+                "x": pred["x"],
+                "y": pred["y"],
+                "width": pred["width"],
+                "height": pred["height"],
+                "class": raw_class,
+                "smoothed_class": smoothed,
+                "confidence": confidence
+            })
 
         return jsonify({
-            'success': True,
-            'predictions': prediction.get('predictions', []),
-            'frame_id': frame_counter["count"]
+            "success": True,
+            "predictions": processed_predictions,
+            "frame_id": frame_id,
+            "blur_score": blur_score,
+            "trigger_alert": trigger_alert
         })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Prediction error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/generate_plots', methods=['GET'])
-def generate_plots():
-    """Generates analytics plots using seaborn and matplotlib."""
-    try:
-        if not CSV_LOG_PATH.exists():
-            return jsonify({'error': 'No log data available'}), 404
-
-        df = pd.read_csv(CSV_LOG_PATH)
-        if df.empty:
-            return jsonify({'error': 'Log file is empty'}), 404
-
-        df['Time'] = pd.to_datetime(df['Time'])
-        plt.close('all')
-
-        # Plot 1: Confidence Over Time
-        plt.figure(figsize=(12, 6))
-        sns.lineplot(data=df, x='Time', y='Confidence', hue='Class', marker='o', linewidth=2)
-        plt.title('Confidence Over Time for Different Attentiveness Classes', fontsize=14)
-        plt.xlabel('Time', fontsize=11)
-        plt.ylabel('Confidence', fontsize=11)
-        plt.xticks(rotation=45, ha='right')
-        plt.grid(True, linestyle='--', alpha=0.6)
-        plt.legend(title='Class')
-        plt.tight_layout()
-        plt.savefig(PLOTS_DIR / 'confidence_over_time.png', dpi=100, bbox_inches='tight')
-        plt.close()
-
-        # Plot 2: Class Distribution
-        plt.figure(figsize=(8, 6))
-        class_counts = df['Class'].value_counts()
-        colors = sns.color_palette('Set2', len(class_counts))
-        plt.pie(class_counts.values, labels=class_counts.index, autopct='%1.1f%%',
-                colors=colors, startangle=90)
-        plt.title('Distribution of Detected Classes', fontsize=14)
-        plt.axis('equal')
-        plt.tight_layout()
-        plt.savefig(PLOTS_DIR / 'class_distribution.png', dpi=100, bbox_inches='tight')
-        plt.close()
-
-        # Plot 3: Average Confidence by Class
-        plt.figure(figsize=(10, 6))
-        avg_conf = df.groupby('Class')['Confidence'].mean().sort_values(ascending=False)
-        sns.barplot(x=avg_conf.index, y=avg_conf.values, palette='viridis')
-        plt.title('Average Confidence Score by Class', fontsize=14)
-        plt.xlabel('Class', fontsize=11)
-        plt.ylabel('Average Confidence', fontsize=11)
-        plt.ylim(0, 1)
-        plt.tight_layout()
-        plt.savefig(PLOTS_DIR / 'avg_confidence_by_class.png', dpi=100, bbox_inches='tight')
-        plt.close()
-
-        return jsonify({
-            'success': True,
-            'message': 'Plots generated successfully',
-            'plots': [
-                '/static/images/confidence_over_time.png',
-                '/static/images/class_distribution.png',
-                '/static/images/avg_confidence_by_class.png'
-            ]
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/get_stats', methods=['GET'])
+@app.route("/get_stats", methods=["GET"])
 def get_stats():
-    """Returns basic statistics from the attentiveness log."""
+    """Returns statistics, optionally filtered by session."""
     try:
-        if not CSV_LOG_PATH.exists():
-            return jsonify({'total_frames': 0, 'classes': {}})
-
-        df = pd.read_csv(CSV_LOG_PATH)
-        if df.empty:
-            return jsonify({'total_frames': 0, 'classes': {}})
-
-        stats = {
-            'total_frames': len(df),
-            'classes': df['Class'].value_counts().to_dict(),
-            'avg_confidence': round(df['Confidence'].mean(), 2)
-        }
-
+        session_id = request.args.get("session_id")
+        stats = db.get_stats(session_id=session_id)
         return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Stats error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chart_data", methods=["GET"])
+def chart_data():
+    """Returns time-series data formatted for Chart.js."""
+    try:
+        session_id = request.args.get("session_id")
+        limit = request.args.get("limit", 500, type=int)
+        data = db.get_chart_data(session_id=session_id, limit=limit)
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Chart data error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/session_scores", methods=["GET"])
+def session_scores():
+    """Returns attention scores across sessions for trend chart."""
+    try:
+        limit = request.args.get("limit", 20, type=int)
+        scores = db.get_session_scores(limit=limit)
+        return jsonify({"success": True, "scores": scores})
+    except Exception as e:
+        logger.error(f"Session scores error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/export", methods=["GET"])
+def export_data():
+    """Export detections as CSV."""
+    try:
+        session_id = request.args.get("session_id")
+        detections = db.get_detections_for_export(session_id=session_id)
+
+        if not detections:
+            return jsonify({"error": "No data to export"}), 404
+
+        # Build CSV in memory
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=[
+            "timestamp", "session_id", "class", "confidence",
+            "frame_id", "smoothed_class"
+        ])
+        writer.writeheader()
+        writer.writerows(detections)
+
+        csv_content = output.getvalue()
+        output.close()
+
+        filename = f"attentiveness_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        return Response(
+            csv_content,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Export error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# === ERROR HANDLERS ===
+
+@app.errorhandler(404)
+def not_found(e):
+    """Handle 404 errors."""
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Endpoint not found"}), 404
+    return render_template("index.html"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    """Handle 500 errors."""
+    logger.error(f"Server error: {e}")
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Internal server error"}), 500
+    return render_template("index.html"), 500
 
 
 # === ENTRY POINT ===
-if __name__ == '__main__':
-    # Production-safe entry point
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    logger.info("Starting Attentiveness Tracker...")
+    app.run(host="0.0.0.0", port=5000, debug=Config.DEBUG)

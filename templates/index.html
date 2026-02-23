@@ -1,24 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attentiveness Tracker - Home</title>
+    <title>Attentiveness Tracker — AI-Powered Focus Monitoring</title>
+    <meta name="description"
+        content="Monitor your attentiveness in real-time using AI-powered webcam analysis. Track focus, detect drowsiness, and improve productivity.">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen text-white">
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
+    <nav class="bg-white/5 backdrop-blur-xl border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-indigo-600">🎯 Attentiveness Tracker</h1>
+                    <h1
+                        class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                        🎯 Attentiveness Tracker</h1>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Home</a>
-                    <a href="/detection" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Detection</a>
-                    <a href="/dashboard" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Dashboard</a>
+                <div class="flex items-center space-x-1">
+                    <a href="/"
+                        class="text-white bg-indigo-500/20 px-4 py-2 rounded-lg border border-indigo-400/30 font-medium">Home</a>
+                    <a href="/detection"
+                        class="text-white/70 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium">Detection</a>
+                    <a href="/dashboard"
+                        class="text-white/70 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium">Dashboard</a>
                 </div>
             </div>
         </div>
@@ -26,95 +35,146 @@
 
     <!-- Hero Section -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div class="text-center mb-16">
-            <h2 class="text-5xl font-extrabold text-gray-900 mb-6">
-                Monitor Your <span class="text-indigo-600">Attentiveness</span> in Real-Time
+        <div class="text-center mb-20">
+            <!-- Floating badge -->
+            <div
+                class="inline-flex items-center px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-medium mb-8">
+                <span class="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></span>
+                Powered by Roboflow AI
+            </div>
+
+            <h2 class="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
+                Monitor Your<br>
+                <span
+                    class="bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Attentiveness</span>
+                in Real-Time
             </h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-                Using advanced computer vision and AI, our system tracks your attention levels through your webcam, 
-                detecting when you're awake, sleepy, or bored. Perfect for online learning, remote work, or studying.
+            <p class="text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
+                AI-powered webcam analysis detects your focus state — awake, sleepy, or bored — with
+                temporal smoothing for high accuracy. Track sessions, view analytics, and improve your productivity.
             </p>
-            <a href="/detection" class="inline-block bg-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transform hover:scale-105 transition duration-300 shadow-lg">
-                🚀 Start Tracking Now
-            </a>
+            <div class="flex justify-center gap-4">
+                <a href="/detection"
+                    class="bg-indigo-500 hover:bg-indigo-400 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-400/40 hover:scale-105 active:scale-95">
+                    🚀 Start Tracking
+                </a>
+                <a href="/dashboard"
+                    class="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-8 py-4 rounded-xl text-lg font-medium transition-all duration-300">
+                    📊 View Dashboard
+                </a>
+            </div>
         </div>
 
         <!-- Features Grid -->
-        <div class="grid md:grid-cols-3 gap-8 mt-20">
-            <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition duration-300">
-                <div class="text-4xl mb-4">📹</div>
-                <h3 class="text-xl font-bold text-gray-900 mb-3">Real-Time Detection</h3>
-                <p class="text-gray-600">
-                    Live webcam feed with instant attentiveness classification using state-of-the-art machine learning models.
+        <div class="grid md:grid-cols-3 gap-6 mb-20">
+            <div
+                class="group bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-indigo-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/5">
+                <div
+                    class="w-14 h-14 bg-indigo-500/10 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition-transform duration-300">
+                    📹</div>
+                <h3 class="text-xl font-bold text-white mb-3">Real-Time Detection</h3>
+                <p class="text-white/40 text-sm leading-relaxed">
+                    Live webcam feed with instant classification. Temporal smoothing reduces noise for reliable results.
                 </p>
             </div>
-
-            <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition duration-300">
-                <div class="text-4xl mb-4">📊</div>
-                <h3 class="text-xl font-bold text-gray-900 mb-3">Analytics Dashboard</h3>
-                <p class="text-gray-600">
-                    Comprehensive visualizations and insights into your attention patterns over time with detailed reports.
+            <div
+                class="group bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-cyan-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-500/5">
+                <div
+                    class="w-14 h-14 bg-cyan-500/10 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition-transform duration-300">
+                    📊</div>
+                <h3 class="text-xl font-bold text-white mb-3">Interactive Analytics</h3>
+                <p class="text-white/40 text-sm leading-relaxed">
+                    Chart.js powered dashboard with confidence trends, class distribution, and session-by-session
+                    breakdowns.
                 </p>
             </div>
-
-            <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition duration-300">
-                <div class="text-4xl mb-4">🔔</div>
-                <h3 class="text-xl font-bold text-gray-900 mb-3">Smart Alerts</h3>
-                <p class="text-gray-600">
-                    Get notified when signs of sleepiness or boredom are detected, helping you stay focused and productive.
+            <div
+                class="group bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-emerald-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/5">
+                <div
+                    class="w-14 h-14 bg-emerald-500/10 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition-transform duration-300">
+                    🔔</div>
+                <h3 class="text-xl font-bold text-white mb-3">Smart Alerts</h3>
+                <p class="text-white/40 text-sm leading-relaxed">
+                    Alerts only trigger after sustained inattention — no false alarms. Configurable sound and
+                    sensitivity.
                 </p>
             </div>
         </div>
 
         <!-- How It Works -->
-        <div class="mt-20 bg-white rounded-xl shadow-lg p-10">
-            <h3 class="text-3xl font-bold text-center text-gray-900 mb-10">How It Works</h3>
-            <div class="grid md:grid-cols-4 gap-6">
-                <div class="text-center">
-                    <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-2xl font-bold text-indigo-600">1</span>
+        <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-10 mb-20">
+            <h3 class="text-3xl font-bold text-center text-white mb-12">How It Works</h3>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center group">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
+                        <span class="text-2xl font-black text-white">1</span>
                     </div>
-                    <h4 class="font-semibold text-gray-900 mb-2">Allow Camera Access</h4>
-                    <p class="text-sm text-gray-600">Grant permission for the app to use your webcam</p>
+                    <h4 class="font-bold text-white mb-2">Allow Camera</h4>
+                    <p class="text-sm text-white/40">Grant permission for webcam access</p>
                 </div>
-                <div class="text-center">
-                    <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-2xl font-bold text-indigo-600">2</span>
+                <div class="text-center group">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-500/20 group-hover:scale-110 transition-transform">
+                        <span class="text-2xl font-black text-white">2</span>
                     </div>
-                    <h4 class="font-semibold text-gray-900 mb-2">AI Analysis</h4>
-                    <p class="text-sm text-gray-600">Our model analyzes your facial expressions</p>
+                    <h4 class="font-bold text-white mb-2">AI Analysis</h4>
+                    <p class="text-sm text-white/40">Roboflow model classifies your state</p>
                 </div>
-                <div class="text-center">
-                    <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-2xl font-bold text-indigo-600">3</span>
+                <div class="text-center group">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                        <span class="text-2xl font-black text-white">3</span>
                     </div>
-                    <h4 class="font-semibold text-gray-900 mb-2">Real-Time Feedback</h4>
-                    <p class="text-sm text-gray-600">See your attentiveness state instantly</p>
+                    <h4 class="font-bold text-white mb-2">Real-Time Feedback</h4>
+                    <p class="text-sm text-white/40">Bounding boxes and attention score live</p>
                 </div>
-                <div class="text-center">
-                    <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-2xl font-bold text-indigo-600">4</span>
+                <div class="text-center group">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform">
+                        <span class="text-2xl font-black text-white">4</span>
                     </div>
-                    <h4 class="font-semibold text-gray-900 mb-2">Track Progress</h4>
-                    <p class="text-sm text-gray-600">Review your analytics on the dashboard</p>
+                    <h4 class="font-bold text-white mb-2">Track Progress</h4>
+                    <p class="text-sm text-white/40">Interactive dashboard with session history</p>
                 </div>
             </div>
         </div>
 
-        <!-- CTA Section -->
-        <div class="mt-20 text-center">
-            <h3 class="text-3xl font-bold text-gray-900 mb-6">Ready to Improve Your Focus?</h3>
-            <a href="/detection" class="inline-block bg-indigo-600 text-white px-10 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transform hover:scale-105 transition duration-300 shadow-lg">
+        <!-- Tech Stack -->
+        <div class="text-center mb-20">
+            <p class="text-xs text-white/30 uppercase tracking-widest mb-4">Built With</p>
+            <div class="flex justify-center flex-wrap gap-3">
+                <span
+                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">FastAPI</span>
+                <span
+                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">Roboflow</span>
+                <span
+                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">OpenCV</span>
+                <span
+                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">Chart.js</span>
+                <span
+                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">SQLite</span>
+                <span
+                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">TailwindCSS</span>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="text-center">
+            <h3 class="text-3xl font-bold text-white mb-6">Ready to Improve Your Focus?</h3>
+            <a href="/detection"
+                class="inline-block bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-white px-12 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-400/40 hover:scale-105 active:scale-95">
                 Get Started →
             </a>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white mt-20 py-8 border-t">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-            <p>&copy; 2025 Attentiveness Tracker. Powered by Roboflow AI.</p>
+    <footer class="bg-white/5 border-t border-white/10 mt-20 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white/30 text-sm">
+            <p>&copy; 2026 Attentiveness Tracker. Powered by Roboflow AI &amp; Computer Vision.</p>
         </div>
     </footer>
 </body>
+
 </html>

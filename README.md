@@ -1,99 +1,182 @@
-# Attentiveness Tracker 🎯
+# 🎯 Attentiveness Tracker
 
-A real-time computer vision project that detects and tracks student attentiveness levels—such as **Engaged**, **Bored**, or **Sleepy**—using webcam footage. Built using Python, Roboflow, Streamlit, OpenCV, and deep learning techniques.
+AI-powered real-time attentiveness detection using webcam analysis. Tracks your focus state — **awake**, **sleepy**, or **bored** — with temporal smoothing, session management, and interactive analytics.
 
-## 🔍 Features
+**Live Demo:** Uses Roboflow Inference API (RF-DETR Nano model) for fast, accurate detection.
 
-- Detects 3 levels of attentiveness: Engaged, Bored, and Sleepy.
-- Real-time classification with confidence score.
-- Clean UI built using Streamlit.
-- Alerts via sound for drowsy/inattentive behavior.
-- CSV logging of timestamps and attentiveness states.
-- Visual analytics using Matplotlib and Seaborn.
+## ✨ Features
 
-## ⚙️ Tech Stack
+- **Real-time Detection** — Live webcam feed with instant classification and bounding boxes
+- **Temporal Smoothing** — Majority vote across frames reduces noise for reliable results
+- **Smart Alerts** — Alerts only trigger after sustained inattention (configurable threshold)
+- **Analytics Dashboard** — Chart.js powered with confidence trends, class distribution, session history
+- **Session Management** — Create, track, and compare multiple detection sessions
+- **CSV Export** — Download detection data for external analysis
+- **Docker Ready** — Development and production Docker Compose configs included
 
-- **Frontend**: Streamlit (Python)
-- **Backend**: Python
-- **Computer Vision**: OpenCV, Roboflow API
-- **Model**: Trained via Roboflow (YOLOv12)
-- **Libraries**: NumPy, Pandas, Seaborn, Matplotlib, TensorFlow/Keras
-- **Deployment**: Local (or can be deployed to cloud)
+## 🛠 Tech Stack
 
-## 📂 Dataset
+| Component | Technology |
+|-----------|-----------|
+| Backend | FastAPI + Uvicorn |
+| AI Model | Roboflow Inference API (RF-DETR Nano) |
+| Computer Vision | OpenCV |
+| HTTP Client | httpx (async) |
+| Database | SQLite |
+| Frontend | HTML + Tailwind CSS + Chart.js |
+| Deployment | Docker Compose + Nginx |
 
-- Used **Roboflow** for annotation and model training.
-- Dataset link: [Attention50K (Roboflow)](https://app.roboflow.com/attentiveness50k/attention50k/2)
-- Based on samples from **DAiSEE dataset** and custom-labeled data.
+## 🚀 Quick Start
 
-## 🚀 Installation & Setup
+### Prerequisites
+- Python 3.11+ **or** Docker
+- [Roboflow API Key](https://roboflow.com/) (free tier available)
 
-### 1. Clone the Repository
+### Option 1: Local Development
+
 ```bash
+# Clone the repo
 git clone https://github.com/your-username/attentiveness-tracker.git
 cd attentiveness-tracker
-```
-### 2. Create Virtual Environment
-```bash
+
+# Create virtual environment
 python -m venv venv
-venv\Scripts\activate  # For Windows
-# OR
-source venv/bin/activate  # For macOS/Linux
-```
-### 3. Install Required Libraries
-```bash
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env and set your ROBOFLOW_API_KEY
+
+# Run the app
+python main.py
 ```
-### 4. Run the Streamlit App
+
+Open **http://localhost:5000** in your browser.
+
+### Option 2: Docker Compose (Development)
+
 ```bash
-streamlit run streamlit_app.py
+# Configure environment
+cp .env.example .env
+# Edit .env and set your ROBOFLOW_API_KEY
+
+# Build and run
+docker compose up --build
+
+# Run in background
+docker compose up -d --build
 ```
 
-## 🧠 Model Inference Flow
-- Capture webcam input using OpenCV.
+Open **http://localhost:5000** in your browser.
 
-- Send frame to Roboflow API for model inference.
+### Option 3: Docker Compose (Production)
 
-- Receive predicted label and confidence score.
+```bash
+# Configure environment
+cp .env.example .env
+# Edit .env — set ROBOFLOW_API_KEY and DEBUG=false
 
-- Display results live on the Streamlit dashboard.
+# Build and deploy with Nginx
+docker compose -f docker-compose.prod.yml up -d --build
+```
 
-- Log prediction into CSV and play alert if inattentive behavior is detected.
-  
+Open **http://localhost** (port 80) in your browser.
 
 ## 📁 Project Structure
-```bash
-├── alert.mp3                          # Alert audio (for sleepy detection)
-├── detect_webcam.py                  # Webcam capture and live detection logic
-├── streamlit_app.py                  # Main UI logic using Streamlit
-├── attentiveness_log.csv             # CSV file to log attentiveness states
-├── plot_attentiveness_confidence.py # Plotting script for confidence analytics
-├── evaluate_model.py                 # Script to evaluate and test model accuracy
-├── attentiveness_csv_cleaner.py     # CSV cleaner script for logs
-├── requirements.txt                  # All Python dependencies
-├── README.md                         # Project documentation (you are here)
+
 ```
-## 📸 Screenshots
-Here's a look at the Attentiveness-Tracker in action:
+attentiveness-tracker/
+├── main.py                    # FastAPI application (entry point)
+├── config.py                  # Centralized configuration
+├── database.py                # SQLite database module
+├── requirements.txt           # Python dependencies
+├── Dockerfile                 # Docker image definition
+├── docker-compose.yml         # Dev Docker Compose
+├── docker-compose.prod.yml    # Production Docker Compose (with Nginx)
+├── .env.example               # Environment variable template
+├── nginx/
+│   └── nginx.conf             # Nginx reverse proxy config
+├── static/
+│   ├── css/styles.css         # Global styles
+│   ├── js/main.js             # Detection client script
+│   └── alert.mp3              # Alert sound
+└── templates/
+    ├── index.html             # Homepage
+    ├── detection.html         # Live detection page
+    └── dashboard.html         # Analytics dashboard
+```
 
-### Real-Time Detection
+## ⚙️ Configuration
 
-![Real-Time Attentiveness](images/Picture1.png)
+All settings are in `.env`:
 
-### Model Evaluation Dashboard
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ROBOFLOW_API_KEY` | — | **Required.** Your Roboflow API key |
+| `ROBOFLOW_PROJECT` | `attention50k` | Roboflow project name |
+| `ROBOFLOW_VERSION` | `3` | Model version |
+| `CONFIDENCE_THRESHOLD` | `40` | Min confidence % for detections |
+| `BLUR_THRESHOLD` | `15.0` | Laplacian variance threshold for blur |
+| `SMOOTHING_WINDOW` | `5` | Frames for temporal smoothing |
+| `ALERT_CONSECUTIVE_FRAMES` | `3` | Inattentive frames before alert |
+| `DEBUG` | `false` | Enable debug mode |
 
-![Model Evaluation](images/Picture2.png)
+## 🌐 Deployment Options
 
-## 🔧 Future Enhancements
-- ✅ Add face recognition to identify individual students.
+### Cloud Platforms
 
-- ✅ Add confidence graphs to show attentiveness trend.
+| Platform | How |
+|----------|-----|
+| **Railway** | Connect GitHub repo → auto-deploys with Dockerfile |
+| **Render** | Connect repo → select Docker runtime → set env vars |
+| **Fly.io** | `fly launch` → `fly deploy` |
+| **Google Cloud Run** | `gcloud run deploy --source .` |
+| **AWS ECS** | Push to ECR → create ECS service |
+| **DigitalOcean App Platform** | Connect repo → auto-detect Dockerfile |
 
-- ✅ Deploy to web using Render, HuggingFace Spaces, or Streamlit Cloud.
+### Self-Hosted (VPS/VM)
 
-- ✅ Integrate with school LMS or attendance systems.
+```bash
+# SSH into your server
+ssh user@your-server
 
-- ✅ Export detailed student engagement reports.
+# Clone and deploy
+git clone https://github.com/your-username/attentiveness-tracker.git
+cd attentiveness-tracker
+cp .env.example .env
+# Edit .env with your API key
 
-## 🧾 License
- - This project is licensed under the MIT License.
+# Production deployment with Nginx
+docker compose -f docker-compose.prod.yml up -d --build
+
+# View logs
+docker compose -f docker-compose.prod.yml logs -f
+```
+
+## 📊 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check |
+| `POST` | `/predict` | Send frame for detection |
+| `POST` | `/api/sessions` | Create session |
+| `POST` | `/api/sessions/{id}/end` | End session |
+| `GET` | `/api/sessions` | List sessions |
+| `DELETE` | `/api/sessions/{id}` | Delete session |
+| `DELETE` | `/api/sessions` | Clear all sessions |
+| `GET` | `/get_stats` | Get statistics |
+| `GET` | `/api/chart_data` | Chart.js data |
+| `GET` | `/api/session_scores` | Session trends |
+| `GET` | `/api/export` | Export CSV |
+
+## 📝 License
+
+MIT License — feel free to use and modify.
+
+---
+
+Built with ❤️ using FastAPI, Roboflow AI, and OpenCV.

@@ -1,0 +1,29 @@
+# ==========================================
+# Attentiveness Tracker — Docker Compose (Dev)
+# ==========================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: attentiveness-tracker
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      # Persist SQLite database
+      - ./data:/app/data
+      # Persist logs
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_NAME=data/attentiveness.db
+      - DEBUG=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; r = httpx.get('http://localhost:5000/health'); r.raise_for_status()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

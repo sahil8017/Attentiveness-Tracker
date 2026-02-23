@@ -1,24 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics Dashboard - Attentiveness Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen text-white">
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
+    <nav class="bg-white/5 backdrop-blur-xl border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-indigo-600">🎯 Attentiveness Tracker</h1>
+                    <h1
+                        class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                        🎯 Attentiveness Tracker</h1>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Home</a>
-                    <a href="/detection" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Detection</a>
-                    <a href="/dashboard" class="text-indigo-600 px-3 py-2 rounded-md font-medium border-b-2 border-indigo-600">Dashboard</a>
+                <div class="flex items-center space-x-1">
+                    <a href="/"
+                        class="text-white/70 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium">Home</a>
+                    <a href="/detection"
+                        class="text-white/70 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium">Detection</a>
+                    <a href="/dashboard"
+                        class="text-white bg-indigo-500/20 px-4 py-2 rounded-lg border border-indigo-400/30 font-medium">Dashboard</a>
                 </div>
             </div>
         </div>
@@ -26,143 +34,423 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="bg-white rounded-xl shadow-lg p-8">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-900">📊 Analytics Dashboard</h2>
-                <button id="refreshBtn" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 shadow-md">
-                    🔄 Refresh Plots
+
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div>
+                <h2 class="text-3xl font-bold">📊 Analytics Dashboard</h2>
+                <p class="text-white/40 text-sm mt-1">Track your attentiveness trends and insights</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Session Filter -->
+                <select id="sessionFilter"
+                    class="bg-white/10 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-indigo-400 focus:outline-none">
+                    <option value="">All Sessions</option>
+                </select>
+                <!-- Clear History -->
+                <button id="clearHistoryBtn"
+                    class="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                    title="Delete all sessions and data">
+                    🗑 Clear History
+                </button>
+                <!-- Reset Dashboard -->
+                <button id="resetDashboardBtn"
+                    class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                    title="Clear all detection data but keep sessions">
+                    🧹 Reset Dashboard
+                </button>
+                <!-- Export Button -->
+                <button id="exportBtn"
+                    class="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300">
+                    📥 Export CSV
+                </button>
+                <!-- Refresh -->
+                <button id="refreshBtn"
+                    class="bg-indigo-500 hover:bg-indigo-400 text-white px-5 py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg shadow-indigo-500/25">
+                    🔄 Refresh
                 </button>
             </div>
+        </div>
 
-            <!-- Stats Summary -->
-            <div id="statsContainer" class="grid md:grid-cols-3 gap-6 mb-10">
-                <div class="bg-gradient-to-br from-blue-100 to-blue-50 p-6 rounded-lg shadow-md">
-                    <p class="text-gray-600 text-sm mb-2">Total Frames Analyzed</p>
-                    <p id="totalFrames" class="text-4xl font-bold text-blue-600">Loading...</p>
-                </div>
-                <div class="bg-gradient-to-br from-green-100 to-green-50 p-6 rounded-lg shadow-md">
-                    <p class="text-gray-600 text-sm mb-2">Average Confidence</p>
-                    <p id="avgConfidence" class="text-4xl font-bold text-green-600">Loading...</p>
-                </div>
-                <div class="bg-gradient-to-br from-purple-100 to-purple-50 p-6 rounded-lg shadow-md">
-                    <p class="text-gray-600 text-sm mb-2">Most Common State</p>
-                    <p id="commonState" class="text-3xl font-bold text-purple-600">Loading...</p>
+        <!-- Stats Summary Cards -->
+        <div id="statsContainer" class="grid md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
+                <p class="text-white/40 text-xs uppercase tracking-wider mb-2">Total Frames</p>
+                <p id="totalFrames" class="text-3xl font-black text-white">—</p>
+            </div>
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
+                <p class="text-white/40 text-xs uppercase tracking-wider mb-2">Avg Confidence</p>
+                <p id="avgConfidence" class="text-3xl font-black text-cyan-400">—</p>
+            </div>
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
+                <p class="text-white/40 text-xs uppercase tracking-wider mb-2">Most Common State</p>
+                <p id="commonState" class="text-3xl font-black text-indigo-400">—</p>
+            </div>
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
+                <p class="text-white/40 text-xs uppercase tracking-wider mb-2">Sessions</p>
+                <p id="sessionCount" class="text-3xl font-black text-emerald-400">—</p>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div id="chartsContainer" class="space-y-6">
+            <!-- Confidence Over Time -->
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                <h3 class="text-lg font-bold text-white/80 mb-4">Confidence Over Time</h3>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="confidenceChart"></canvas>
                 </div>
             </div>
 
-            <!-- Status Message -->
-            <div id="statusMessage" class="mb-6 p-4 rounded-lg bg-blue-100 text-blue-800 text-center hidden">
-                <p id="statusText"></p>
-            </div>
-
-            <!-- Plots Container -->
-            <div id="plotsContainer" class="space-y-8">
-                <div class="bg-gray-50 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">Confidence Over Time</h3>
-                    <img id="plot1" src="/static/images/confidence_over_time.png" alt="Confidence Over Time" class="w-full rounded-lg shadow-md">
-                </div>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="bg-gray-50 p-6 rounded-lg">
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">Class Distribution</h3>
-                        <img id="plot2" src="/static/images/class_distribution.png" alt="Class Distribution" class="w-full rounded-lg shadow-md">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Class Distribution -->
+                <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                    <h3 class="text-lg font-bold text-white/80 mb-4">Class Distribution</h3>
+                    <div class="relative" style="height: 280px;">
+                        <canvas id="distributionChart"></canvas>
                     </div>
+                </div>
 
-                    <div class="bg-gray-50 p-6 rounded-lg">
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">Average Confidence by Class</h3>
-                        <img id="plot3" src="/static/images/avg_confidence_by_class.png" alt="Average Confidence" class="w-full rounded-lg shadow-md">
+                <!-- Average Confidence by Class -->
+                <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                    <h3 class="text-lg font-bold text-white/80 mb-4">Avg Confidence by Class</h3>
+                    <div class="relative" style="height: 280px;">
+                        <canvas id="avgConfChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- No Data Message -->
-            <div id="noDataMessage" class="text-center py-20 hidden">
-                <div class="text-6xl mb-4">📭</div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-3">No Data Available</h3>
-                <p class="text-gray-600 mb-6">Start tracking on the detection page to see analytics here.</p>
-                <a href="/detection" class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300">
-                    Go to Detection →
-                </a>
+            <!-- Session Attention Score Trend -->
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                <h3 class="text-lg font-bold text-white/80 mb-4">Attention Score Trend (Across Sessions)</h3>
+                <div class="relative" style="height: 250px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
             </div>
+
+            <!-- Session History -->
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                <h3 class="text-lg font-bold text-white/80 mb-4">Session History</h3>
+                <div id="sessionHistory" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- No Data Message -->
+        <div id="noDataMessage" class="text-center py-20 hidden">
+            <div class="text-7xl mb-6 opacity-60">📭</div>
+            <h3 class="text-2xl font-bold text-white/80 mb-3">No Data Yet</h3>
+            <p class="text-white/40 mb-6">Start a detection session to see analytics here.</p>
+            <a href="/detection"
+                class="inline-block bg-indigo-500 hover:bg-indigo-400 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-indigo-500/25">
+                Go to Detection →
+            </a>
         </div>
     </main>
 
     <script>
-        // Load statistics
+        // === CHART.JS DEFAULTS ===
+        Chart.defaults.color = 'rgba(255,255,255,0.5)';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+        Chart.defaults.font.family = 'Inter, sans-serif';
+
+        const CLASS_COLORS = {
+            awake: { bg: 'rgba(52, 211, 153, 0.2)', border: 'rgba(52, 211, 153, 1)' },
+            sleepy: { bg: 'rgba(251, 191, 36, 0.2)', border: 'rgba(251, 191, 36, 1)' },
+            bored: { bg: 'rgba(248, 113, 113, 0.2)', border: 'rgba(248, 113, 113, 1)' }
+        };
+
+        let confidenceChart, distributionChart, avgConfChart, trendChart;
+
+        // === INIT CHARTS ===
+
+        function initCharts() {
+            const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
+            confidenceChart = new Chart(confidenceCtx, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { usePointStyle: true, padding: 15 } } },
+                    scales: {
+                        y: { min: 0, max: 1, ticks: { callback: v => Math.round(v * 100) + '%' } },
+                        x: { ticks: { maxTicksLimit: 15, maxRotation: 45 } }
+                    },
+                    elements: { point: { radius: 2 }, line: { tension: 0.3, borderWidth: 2 } }
+                }
+            });
+
+            const distCtx = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(distCtx, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } } }
+                }
+            });
+
+            const avgCtx = document.getElementById('avgConfChart').getContext('2d');
+            avgConfChart = new Chart(avgCtx, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderRadius: 8, barThickness: 40 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: 0, max: 1, ticks: { callback: v => Math.round(v * 100) + '%' } } }
+                }
+            });
+
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: [], datasets: [{
+                        label: 'Attention Score',
+                        data: [], borderColor: 'rgba(99, 102, 241, 1)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true, tension: 0.4, borderWidth: 2.5,
+                        pointBackgroundColor: 'rgba(99, 102, 241, 1)', pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
+                }
+            });
+        }
+
+        // === LOAD DATA ===
+
         async function loadStats() {
             try {
-                const response = await fetch('/get_stats');
-                const data = await response.json();
-                
+                const sessionId = document.getElementById('sessionFilter').value;
+                const url = sessionId ? `/get_stats?session_id=${sessionId}` : '/get_stats';
+                const res = await fetch(url);
+                const data = await res.json();
+
                 if (data.total_frames === 0) {
-                    document.getElementById('plotsContainer').classList.add('hidden');
+                    document.getElementById('chartsContainer').classList.add('hidden');
                     document.getElementById('noDataMessage').classList.remove('hidden');
                     document.getElementById('statsContainer').classList.add('hidden');
-                } else {
-                    document.getElementById('totalFrames').textContent = data.total_frames;
-                    document.getElementById('avgConfidence').textContent = data.avg_confidence || '-';
-                    
-                    // Find most common state
-                    if (data.classes) {
-                        const mostCommon = Object.entries(data.classes).reduce((a, b) => a[1] > b[1] ? a : b);
-                        document.getElementById('commonState').textContent = mostCommon[0].toUpperCase();
-                    }
+                    return;
                 }
-            } catch (error) {
-                console.error('Error loading stats:', error);
+
+                document.getElementById('chartsContainer').classList.remove('hidden');
+                document.getElementById('noDataMessage').classList.add('hidden');
+                document.getElementById('statsContainer').classList.remove('hidden');
+
+                document.getElementById('totalFrames').textContent = data.total_frames.toLocaleString();
+                document.getElementById('avgConfidence').textContent = Math.round(data.avg_confidence * 100) + '%';
+
+                if (data.classes && Object.keys(data.classes).length > 0) {
+                    const sorted = Object.entries(data.classes).sort((a, b) => b[1] - a[1]);
+                    document.getElementById('commonState').textContent = sorted[0][0].toUpperCase();
+
+                    // Update distribution chart
+                    distributionChart.data.labels = sorted.map(c => c[0].toUpperCase());
+                    distributionChart.data.datasets[0].data = sorted.map(c => c[1]);
+                    distributionChart.data.datasets[0].backgroundColor = sorted.map(c =>
+                        CLASS_COLORS[c[0]]?.border || 'rgba(107, 114, 128, 1)'
+                    );
+                    distributionChart.update();
+
+                    // Compute avg confidence per class from chart data
+                    loadChartData();
+                }
+            } catch (err) {
+                console.error('Error loading stats:', err);
             }
         }
 
-        // Refresh plots
-        document.getElementById('refreshBtn').addEventListener('click', async () => {
-            const statusMsg = document.getElementById('statusMessage');
-            const statusText = document.getElementById('statusText');
-            
-            statusMsg.classList.remove('hidden', 'bg-red-100', 'text-red-800');
-            statusMsg.classList.add('bg-blue-100', 'text-blue-800');
-            statusText.textContent = 'Generating plots... Please wait.';
-            
+        async function loadChartData() {
             try {
-                const response = await fetch('/generate_plots');
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Reload images with cache buster
-                    const timestamp = new Date().getTime();
-                    document.getElementById('plot1').src = `/static/images/confidence_over_time.png?t=${timestamp}`;
-                    document.getElementById('plot2').src = `/static/images/class_distribution.png?t=${timestamp}`;
-                    document.getElementById('plot3').src = `/static/images/avg_confidence_by_class.png?t=${timestamp}`;
-                    
-                    statusMsg.classList.remove('bg-blue-100', 'text-blue-800');
-                    statusMsg.classList.add('bg-green-100', 'text-green-800');
-                    statusText.textContent = '✅ Plots updated successfully!';
-                    
-                    // Hide success message after 3 seconds
-                    setTimeout(() => {
-                        statusMsg.classList.add('hidden');
-                    }, 3000);
-                    
-                    // Reload stats
-                    loadStats();
-                    
-                    // Show plots if they were hidden
-                    document.getElementById('plotsContainer').classList.remove('hidden');
-                    document.getElementById('noDataMessage').classList.add('hidden');
-                    document.getElementById('statsContainer').classList.remove('hidden');
-                } else {
-                    statusMsg.classList.remove('bg-blue-100', 'text-blue-800');
-                    statusMsg.classList.add('bg-red-100', 'text-red-800');
-                    statusText.textContent = '❌ Error: ' + (data.error || 'Failed to generate plots');
+                const sessionId = document.getElementById('sessionFilter').value;
+                const url = sessionId ? `/api/chart_data?session_id=${sessionId}` : '/api/chart_data';
+                const res = await fetch(url);
+                const json = await res.json();
+                if (!json.success) return;
+
+                const data = json.data;
+
+                // Group by class for confidence chart
+                const classGroups = {};
+                data.labels.forEach((label, i) => {
+                    const cls = data.classes[i];
+                    if (!classGroups[cls]) classGroups[cls] = { labels: [], data: [] };
+                    classGroups[cls].labels.push(label.split('T')[1]?.substring(0, 8) || label);
+                    classGroups[cls].data.push(data.confidence[i]);
+                });
+
+                // Confidence over time: single line colored by class
+                const timeLabels = data.labels.map(l => l.split('T')[1]?.substring(0, 8) || l);
+                confidenceChart.data.labels = timeLabels;
+                confidenceChart.data.datasets = Object.entries(classGroups).map(([cls, d]) => ({
+                    label: cls.toUpperCase(),
+                    data: data.labels.map((l, i) => data.classes[i] === cls ? data.confidence[i] : null),
+                    borderColor: CLASS_COLORS[cls]?.border || '#6b7280',
+                    backgroundColor: CLASS_COLORS[cls]?.bg || 'rgba(107,114,128,0.2)',
+                    spanGaps: false, fill: false
+                }));
+                confidenceChart.update();
+
+                // Average confidence by class
+                const avgByClass = {};
+                const countByClass = {};
+                data.classes.forEach((cls, i) => {
+                    avgByClass[cls] = (avgByClass[cls] || 0) + data.confidence[i];
+                    countByClass[cls] = (countByClass[cls] || 0) + 1;
+                });
+
+                const classes = Object.keys(avgByClass);
+                avgConfChart.data.labels = classes.map(c => c.toUpperCase());
+                avgConfChart.data.datasets[0].data = classes.map(c => avgByClass[c] / countByClass[c]);
+                avgConfChart.data.datasets[0].backgroundColor = classes.map(c =>
+                    CLASS_COLORS[c]?.border || '#6b7280'
+                );
+                avgConfChart.update();
+
+            } catch (err) {
+                console.error('Error loading chart data:', err);
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const res = await fetch('/api/sessions');
+                const json = await res.json();
+                if (!json.success) return;
+
+                const sessions = json.sessions;
+                document.getElementById('sessionCount').textContent = sessions.length;
+
+                // Populate filter dropdown
+                const filter = document.getElementById('sessionFilter');
+                const current = filter.value;
+                filter.innerHTML = '<option value="">All Sessions</option>';
+                sessions.forEach(s => {
+                    const dt = new Date(s.start_time);
+                    const label = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const score = s.attention_score ? ` (${s.attention_score}%)` : '';
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = label + score;
+                    filter.appendChild(opt);
+                });
+                filter.value = current;
+
+                // Session history list
+                const history = document.getElementById('sessionHistory');
+                if (sessions.length === 0) {
+                    history.innerHTML = '<p class="text-white/30 text-center py-6">No sessions yet</p>';
+                    return;
                 }
-            } catch (error) {
-                statusMsg.classList.remove('bg-blue-100', 'text-blue-800');
-                statusMsg.classList.add('bg-red-100', 'text-red-800');
-                statusText.textContent = '❌ Error: ' + error.message;
+                history.innerHTML = sessions.map(s => {
+                    const start = new Date(s.start_time);
+                    const end = s.end_time ? new Date(s.end_time) : null;
+                    const duration = end ? Math.round((end - start) / 1000) : '—';
+                    const durationStr = typeof duration === 'number' ? `${Math.floor(duration / 60)}m ${duration % 60}s` : duration;
+                    const scoreColor = (s.attention_score || 0) >= 70 ? 'text-emerald-400' : (s.attention_score || 0) >= 40 ? 'text-amber-400' : 'text-red-400';
+                    return `
+                        <div class="flex items-center justify-between bg-white/5 rounded-xl p-4 border border-white/5 hover:border-white/10 transition-all cursor-pointer" onclick="document.getElementById('sessionFilter').value='${s.id}'; refreshAll();">
+                            <div>
+                                <p class="text-sm font-medium text-white/80">${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p class="text-xs text-white/30">${s.total_frames || 0} frames · ${durationStr}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xl font-bold ${scoreColor}">${s.attention_score != null ? s.attention_score + '%' : '—'}</p>
+                                <p class="text-[10px] text-white/30 uppercase">Attention</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Error loading sessions:', err);
+            }
+        }
+
+        async function loadTrend() {
+            try {
+                const res = await fetch('/api/session_scores');
+                const json = await res.json();
+                if (!json.success || json.scores.length === 0) return;
+
+                trendChart.data.labels = json.scores.map(s => {
+                    const d = new Date(s.start_time);
+                    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                });
+                trendChart.data.datasets[0].data = json.scores.map(s => s.attention_score);
+                trendChart.update();
+            } catch (err) {
+                console.error('Error loading trend:', err);
+            }
+        }
+
+        // === REFRESH ===
+
+        async function refreshAll() {
+            await Promise.all([loadStats(), loadSessions(), loadTrend()]);
+        }
+
+        // === EXPORT ===
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const sessionId = document.getElementById('sessionFilter').value;
+            const url = sessionId ? `/api/export?session_id=${sessionId}` : '/api/export';
+            window.location.href = url;
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', refreshAll);
+
+        document.getElementById('sessionFilter').addEventListener('change', () => {
+            loadStats();
+            loadChartData();
+        });
+
+        // === CLEAR / RESET ===
+
+        document.getElementById('clearHistoryBtn').addEventListener('click', async () => {
+            if (!confirm('⚠️ This will permanently delete ALL sessions and detection data. Are you sure?')) return;
+            try {
+                const res = await fetch('/api/sessions', { method: 'DELETE' });
+                const json = await res.json();
+                if (json.success) {
+                    alert('✅ All history cleared successfully.');
+                    refreshAll();
+                } else {
+                    alert('❌ Failed to clear history: ' + (json.error || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Error clearing history:', err);
+                alert('❌ Error clearing history.');
             }
         });
 
-        // Load stats on page load
-        loadStats();
+        document.getElementById('resetDashboardBtn').addEventListener('click', async () => {
+            if (!confirm('⚠️ This will clear all detection analytics data (sessions will be kept). Are you sure?')) return;
+            try {
+                const res = await fetch('/api/detections', { method: 'DELETE' });
+                const json = await res.json();
+                if (json.success) {
+                    alert('✅ Dashboard data reset successfully.');
+                    refreshAll();
+                } else {
+                    alert('❌ Failed to reset dashboard: ' + (json.error || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Error resetting dashboard:', err);
+                alert('❌ Error resetting dashboard.');
+            }
+        });
+
+        // === INIT ===
+        initCharts();
+        refreshAll();
     </script>
 </body>
+
 </html>
