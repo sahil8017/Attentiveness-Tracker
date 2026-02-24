@@ -5,28 +5,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics Dashboard - Attentiveness Tracker</title>
+
+    <!-- Load Tailwind FIRST -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Then configure dark mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        };
+    </script>
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Your Custom Styles -->
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 
-<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen text-white">
+<body class="bg-gray-50 text-gray-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen">
     <!-- Navigation -->
-    <nav class="bg-white/5 backdrop-blur-xl border-b border-white/10">
+    <nav class="bg-white/80 dark:bg-zinc-950/80 backdrop-blur border-b border-gray-200/70 dark:border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <h1
-                        class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-                        🎯 Attentiveness Tracker</h1>
+                <div class="flex items-center gap-3">
+                    <span class="h-9 w-9 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                        <i data-lucide="scan-face" class="h-5 w-5"></i>
+                    </span>
+                    <h1 class="text-lg font-semibold tracking-tight">Attentiveness Tracker</h1>
                 </div>
-                <div class="flex items-center space-x-1">
-                    <a href="/"
-                        class="text-white/70 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium">Home</a>
-                    <a href="/detection"
-                        class="text-white/70 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium">Detection</a>
-                    <a href="/dashboard"
-                        class="text-white bg-indigo-500/20 px-4 py-2 rounded-lg border border-indigo-400/30 font-medium">Dashboard</a>
+                <div class="flex items-center gap-2">
+                    <div class="hidden md:flex items-center gap-1 rounded-full bg-white/70 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 px-2 py-1">
+                        <a href="/"
+                            class="px-4 py-1.5 text-sm font-medium rounded-full text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition">Home</a>
+                        <a href="/detection"
+                            class="px-4 py-1.5 text-sm font-medium rounded-full text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition">Detection</a>
+                        <a href="/dashboard"
+                            class="px-4 py-1.5 text-sm font-medium rounded-full bg-indigo-600/10 text-indigo-600 dark:text-indigo-300">Dashboard</a>
+                    </div>
+                    <button id="themeToggle"
+                        class="h-10 w-10 rounded-full border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-zinc-900/70 hover:bg-gray-100 dark:hover:bg-zinc-800/80 transition flex items-center justify-center">
+                        <i data-lucide="sun" class="h-4 w-4 dark:hidden"></i>
+                        <i data-lucide="moon" class="h-4 w-4 hidden dark:block"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -36,67 +60,81 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <!-- Header -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
             <div>
-                <h2 class="text-3xl font-bold">📊 Analytics Dashboard</h2>
-                <p class="text-white/40 text-sm mt-1">Track your attentiveness trends and insights</p>
+                <div class="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300 mb-2">
+                    <i data-lucide="line-chart" class="h-4 w-4"></i>
+                    Analytics dashboard
+                </div>
+                <h2 class="text-3xl font-semibold">Session intelligence</h2>
+                <p class="text-gray-500 dark:text-zinc-400 text-sm mt-1">Track your attentiveness trends and insights.</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <!-- Session Filter -->
                 <select id="sessionFilter"
-                    class="bg-white/10 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:border-indigo-400 focus:outline-none">
-                    <option value="">All Sessions</option>
-                </select>
+    class="appearance-none bg-white dark:bg-zinc-900 
+           border border-gray-300 dark:border-white/10 
+           rounded-xl px-4 pr-10 py-2.5 text-sm font-medium
+           text-gray-800 dark:text-zinc-200
+           shadow-sm hover:border-indigo-400 
+           focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 
+           transition-all duration-200 cursor-pointer">
+
+    <option value="">All Sessions</option>
+</select>
                 <!-- Clear History -->
                 <button id="clearHistoryBtn"
-                    class="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                    class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/40 text-rose-500 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                     title="Delete all sessions and data">
-                    🗑 Clear History
+                    Clear History
                 </button>
                 <!-- Reset Dashboard -->
                 <button id="resetDashboardBtn"
-                    class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                    class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-600 dark:text-amber-300 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                     title="Clear all detection data but keep sessions">
-                    🧹 Reset Dashboard
+                    Reset Dashboard
                 </button>
                 <!-- Export Button -->
                 <button id="exportBtn"
-                    class="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300">
-                    📥 Export CSV
+                    class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-zinc-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-300">
+                    Export CSV
                 </button>
                 <!-- Refresh -->
                 <button id="refreshBtn"
-                    class="bg-indigo-500 hover:bg-indigo-400 text-white px-5 py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg shadow-indigo-500/25">
-                    🔄 Refresh
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md">
+                    Refresh
                 </button>
             </div>
         </div>
 
         <!-- Stats Summary Cards -->
         <div id="statsContainer" class="grid md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-                <p class="text-white/40 text-xs uppercase tracking-wider mb-2">Total Frames</p>
-                <p id="totalFrames" class="text-3xl font-black text-white">—</p>
+            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
+                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-2">Total frames</p>
+                <p id="totalFrames" class="text-3xl font-semibold text-gray-900 dark:text-white">—</p>
             </div>
-            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-                <p class="text-white/40 text-xs uppercase tracking-wider mb-2">Avg Confidence</p>
-                <p id="avgConfidence" class="text-3xl font-black text-cyan-400">—</p>
+            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
+                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-2">Avg confidence</p>
+                <p id="avgConfidence" class="text-3xl font-semibold text-indigo-600 dark:text-indigo-300">—</p>
             </div>
-            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-                <p class="text-white/40 text-xs uppercase tracking-wider mb-2">Most Common State</p>
-                <p id="commonState" class="text-3xl font-black text-indigo-400">—</p>
+            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
+                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-2">Most common state</p>
+                <p id="commonState" class="text-3xl font-semibold text-gray-900 dark:text-white">—</p>
             </div>
-            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-                <p class="text-white/40 text-xs uppercase tracking-wider mb-2">Sessions</p>
-                <p id="sessionCount" class="text-3xl font-black text-emerald-400">—</p>
+            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
+                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-2">Sessions</p>
+                <p id="sessionCount" class="text-3xl font-semibold text-emerald-600 dark:text-emerald-300">—</p>
             </div>
         </div>
 
         <!-- Charts Grid -->
         <div id="chartsContainer" class="space-y-6">
             <!-- Confidence Over Time -->
-            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-                <h3 class="text-lg font-bold text-white/80 mb-4">Confidence Over Time</h3>
+            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Confidence over time</h3>
+                    <span class="text-xs text-gray-400 dark:text-zinc-500">Live signal</span>
+                </div>
                 <div class="relative" style="height: 300px;">
                     <canvas id="confidenceChart"></canvas>
                 </div>
@@ -104,16 +142,16 @@
 
             <div class="grid md:grid-cols-2 gap-6">
                 <!-- Class Distribution -->
-                <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-                    <h3 class="text-lg font-bold text-white/80 mb-4">Class Distribution</h3>
+                <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
+                    <h3 class="text-lg font-semibold mb-4">Class distribution</h3>
                     <div class="relative" style="height: 280px;">
                         <canvas id="distributionChart"></canvas>
                     </div>
                 </div>
 
                 <!-- Average Confidence by Class -->
-                <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-                    <h3 class="text-lg font-bold text-white/80 mb-4">Avg Confidence by Class</h3>
+                <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
+                    <h3 class="text-lg font-semibold mb-4">Avg confidence by class</h3>
                     <div class="relative" style="height: 280px;">
                         <canvas id="avgConfChart"></canvas>
                     </div>
@@ -121,16 +159,16 @@
             </div>
 
             <!-- Session Attention Score Trend -->
-            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-                <h3 class="text-lg font-bold text-white/80 mb-4">Attention Score Trend (Across Sessions)</h3>
+            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
+                <h3 class="text-lg font-semibold mb-4">Attention score trend</h3>
                 <div class="relative" style="height: 250px;">
                     <canvas id="trendChart"></canvas>
                 </div>
             </div>
 
             <!-- Session History -->
-            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-                <h3 class="text-lg font-bold text-white/80 mb-4">Session History</h3>
+            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
+                <h3 class="text-lg font-semibold mb-4">Session history</h3>
                 <div id="sessionHistory" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
                     <!-- Populated dynamically -->
                 </div>
@@ -139,67 +177,199 @@
 
         <!-- No Data Message -->
         <div id="noDataMessage" class="text-center py-20 hidden">
-            <div class="text-7xl mb-6 opacity-60">📭</div>
-            <h3 class="text-2xl font-bold text-white/80 mb-3">No Data Yet</h3>
-            <p class="text-white/40 mb-6">Start a detection session to see analytics here.</p>
+            <div class="flex justify-center mb-6">
+                <span class="h-14 w-14 rounded-2xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                    <i data-lucide="inbox" class="h-6 w-6"></i>
+                </span>
+            </div>
+            <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-3">No data yet</h3>
+            <p class="text-gray-500 dark:text-zinc-400 mb-6">Start a detection session to see analytics here.</p>
             <a href="/detection"
-                class="inline-block bg-indigo-500 hover:bg-indigo-400 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-indigo-500/25">
-                Go to Detection →
+                class="inline-block bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02]">
+                Go to Detection
             </a>
         </div>
     </main>
 
     <script>
-        // === CHART.JS DEFAULTS ===
-        Chart.defaults.color = 'rgba(255,255,255,0.5)';
-        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
-        Chart.defaults.font.family = 'Inter, sans-serif';
+        const themeToggle = document.getElementById('themeToggle');
+        const storedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+            document.documentElement.classList.add('dark');
+        }
 
+        const ACCENT_COLOR = '#6366f1';
         const CLASS_COLORS = {
-            awake: { bg: 'rgba(52, 211, 153, 0.2)', border: 'rgba(52, 211, 153, 1)' },
-            sleepy: { bg: 'rgba(251, 191, 36, 0.2)', border: 'rgba(251, 191, 36, 1)' },
-            bored: { bg: 'rgba(248, 113, 113, 0.2)', border: 'rgba(248, 113, 113, 1)' }
+            awake: { hex: '#34d399' },
+            sleepy: { hex: '#fbbf24' },
+            bored: { hex: '#f87171' }
+        };
+
+        const getChartTheme = () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            return {
+                text: isDark ? 'rgba(244,244,245,0.75)' : 'rgba(15,23,42,0.7)',
+                grid: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'
+            };
+        };
+
+        const applyChartTheme = () => {
+            const theme = getChartTheme();
+            Chart.defaults.color = theme.text;
+            Chart.defaults.borderColor = theme.grid;
+            Chart.defaults.font.family = 'Inter, sans-serif';
+        };
+
+        const hexToRgba = (hex, alpha) => {
+            const clean = hex.replace('#', '');
+            const bigint = parseInt(clean, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        };
+
+        const createFadeGradient = (ctx, chartArea, color) => {
+            if (!chartArea) {
+                return hexToRgba(color, 0.18);
+            }
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, hexToRgba(color, 0.35));
+            gradient.addColorStop(1, hexToRgba(color, 0));
+            return gradient;
+        };
+
+        const externalTooltipHandler = (context) => {
+            const { chart, tooltip } = context;
+            let tooltipEl = chart.canvas.parentNode.querySelector('.chart-tooltip');
+
+            if (!tooltipEl) {
+                tooltipEl = document.createElement('div');
+                tooltipEl.classList.add('chart-tooltip');
+                chart.canvas.parentNode.appendChild(tooltipEl);
+            }
+
+            if (tooltip.opacity === 0) {
+                tooltipEl.classList.remove('show');
+                return;
+            }
+
+            const titleLines = tooltip.title || [];
+            const bodyLines = tooltip.body?.map(item => item.lines).flat() || [];
+            const title = titleLines.join(' ');
+            const body = bodyLines.join(' ');
+
+            tooltipEl.innerHTML = `${title ? `<div class="label">${title}</div>` : ''}${body ? `<div>${body}</div>` : ''}`;
+
+            const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
+            tooltipEl.style.left = positionX + tooltip.caretX + 'px';
+            tooltipEl.style.top = positionY + tooltip.caretY + 'px';
+            tooltipEl.classList.add('show');
         };
 
         let confidenceChart, distributionChart, avgConfChart, trendChart;
 
+        const refreshChartTheme = () => {
+            applyChartTheme();
+            [confidenceChart, distributionChart, avgConfChart, trendChart].forEach(chart => chart?.update());
+        };
+
+        themeToggle?.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            refreshChartTheme();
+        });
+
+        applyChartTheme();
+        lucide.createIcons();
+
         // === INIT CHARTS ===
 
         function initCharts() {
+            const lineOptions = (max, formatter) => ({
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { usePointStyle: true, padding: 14 } },
+                    tooltip: { enabled: false, external: externalTooltipHandler }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max,
+                        grid: { display: false },
+                        ticks: { callback: formatter, color: () => getChartTheme().text }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxTicksLimit: 12, maxRotation: 0, color: () => getChartTheme().text }
+                    }
+                },
+                elements: {
+                    point: { radius: 0, hoverRadius: 4, hitRadius: 14 },
+                    line: { tension: 0.35, borderWidth: 2 }
+                }
+            });
+
             const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
             confidenceChart = new Chart(confidenceCtx, {
                 type: 'line',
                 data: { labels: [], datasets: [] },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { labels: { usePointStyle: true, padding: 15 } } },
-                    scales: {
-                        y: { min: 0, max: 1, ticks: { callback: v => Math.round(v * 100) + '%' } },
-                        x: { ticks: { maxTicksLimit: 15, maxRotation: 45 } }
-                    },
-                    elements: { point: { radius: 2 }, line: { tension: 0.3, borderWidth: 2 } }
-                }
+                options: lineOptions(1, v => Math.round(v * 100) + '%')
             });
 
             const distCtx = document.getElementById('distributionChart').getContext('2d');
             distributionChart = new Chart(distCtx, {
                 type: 'doughnut',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [],
+                        borderWidth: 0,
+                        borderRadius: 10,
+                        spacing: 2,
+                        hoverOffset: 8
+                    }]
+                },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    cutout: '65%',
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } } }
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '80%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14 } },
+                        tooltip: { enabled: false, external: externalTooltipHandler }
+                    }
                 }
             });
 
             const avgCtx = document.getElementById('avgConfChart').getContext('2d');
             avgConfChart = new Chart(avgCtx, {
                 type: 'bar',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderRadius: 8, barThickness: 40 }] },
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [],
+                        borderRadius: 10,
+                        borderSkipped: false,
+                        barThickness: 36
+                    }]
+                },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { min: 0, max: 1, ticks: { callback: v => Math.round(v * 100) + '%' } } }
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipHandler } },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 1,
+                            grid: { display: false },
+                            ticks: { callback: v => Math.round(v * 100) + '%', color: () => getChartTheme().text }
+                        },
+                        x: { grid: { display: false }, ticks: { color: () => getChartTheme().text } }
+                    }
                 }
             });
 
@@ -207,19 +377,20 @@
             trendChart = new Chart(trendCtx, {
                 type: 'line',
                 data: {
-                    labels: [], datasets: [{
+                    labels: [],
+                    datasets: [{
                         label: 'Attention Score',
-                        data: [], borderColor: 'rgba(99, 102, 241, 1)',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                        fill: true, tension: 0.4, borderWidth: 2.5,
-                        pointBackgroundColor: 'rgba(99, 102, 241, 1)', pointRadius: 4
+                        data: [],
+                        borderColor: ACCENT_COLOR,
+                        backgroundColor: (context) => createFadeGradient(context.chart.ctx, context.chart.chartArea, ACCENT_COLOR),
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
                     }]
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
-                }
+                options: lineOptions(100, v => v + '%')
             });
         }
 
@@ -288,14 +459,16 @@
                 // Confidence over time: single line colored by class
                 const timeLabels = data.labels.map(l => l.split('T')[1]?.substring(0, 8) || l);
                 confidenceChart.data.labels = timeLabels;
-                confidenceChart.data.datasets = Object.entries(classGroups).map(([cls, d]) => ({
-                    label: cls.toUpperCase(),
-                    data: data.labels.map((l, i) => data.classes[i] === cls ? data.confidence[i] : null),
-                    borderColor: CLASS_COLORS[cls]?.border || '#6b7280',
-                    backgroundColor: CLASS_COLORS[cls]?.bg || 'rgba(107,114,128,0.2)',
-                    spanGaps: false, fill: false
-                }));
-                confidenceChart.update();
+                    confidenceChart.data.datasets = Object.entries(classGroups).map(([cls, d]) => ({
+                        label: cls.toUpperCase(),
+                        data: data.labels.map((l, i) => data.classes[i] === cls ? data.confidence[i] : null),
+                        borderColor: CLASS_COLORS[cls]?.hex || '#6b7280',
+                        backgroundColor: (context) => createFadeGradient(context.chart.ctx, context.chart.chartArea, CLASS_COLORS[cls]?.hex || '#6b7280'),
+                        spanGaps: false,
+                        fill: true
+                    }));
+                    confidenceChart.update();
+
 
                 // Average confidence by class
                 const avgByClass = {};
@@ -309,7 +482,7 @@
                 avgConfChart.data.labels = classes.map(c => c.toUpperCase());
                 avgConfChart.data.datasets[0].data = classes.map(c => avgByClass[c] / countByClass[c]);
                 avgConfChart.data.datasets[0].backgroundColor = classes.map(c =>
-                    CLASS_COLORS[c]?.border || '#6b7280'
+                    CLASS_COLORS[c]?.hex || '#6b7280'
                 );
                 avgConfChart.update();
 
@@ -345,7 +518,7 @@
                 // Session history list
                 const history = document.getElementById('sessionHistory');
                 if (sessions.length === 0) {
-                    history.innerHTML = '<p class="text-white/30 text-center py-6">No sessions yet</p>';
+                    history.innerHTML = '<p class="text-gray-400 dark:text-zinc-500 text-center py-6">No sessions yet</p>';
                     return;
                 }
                 history.innerHTML = sessions.map(s => {
@@ -353,16 +526,17 @@
                     const end = s.end_time ? new Date(s.end_time) : null;
                     const duration = end ? Math.round((end - start) / 1000) : '—';
                     const durationStr = typeof duration === 'number' ? `${Math.floor(duration / 60)}m ${duration % 60}s` : duration;
-                    const scoreColor = (s.attention_score || 0) >= 70 ? 'text-emerald-400' : (s.attention_score || 0) >= 40 ? 'text-amber-400' : 'text-red-400';
+                    const scoreValue = s.attention_score || 0;
+                    const scoreColor = scoreValue >= 70 ? 'text-emerald-600 dark:text-emerald-300' : scoreValue >= 40 ? 'text-amber-600 dark:text-amber-300' : 'text-rose-600 dark:text-rose-300';
                     return `
-                        <div class="flex items-center justify-between bg-white/5 rounded-xl p-4 border border-white/5 hover:border-white/10 transition-all cursor-pointer" onclick="document.getElementById('sessionFilter').value='${s.id}'; refreshAll();">
+                        <div class="flex items-center justify-between bg-white dark:bg-zinc-900/70 rounded-xl p-4 border border-gray-200 dark:border-white/10 hover:border-indigo-300 dark:hover:border-indigo-400/60 transition-all cursor-pointer" onclick="document.getElementById('sessionFilter').value='${s.id}'; refreshAll();">
                             <div>
-                                <p class="text-sm font-medium text-white/80">${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                <p class="text-xs text-white/30">${s.total_frames || 0} frames · ${durationStr}</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p class="text-xs text-gray-500 dark:text-zinc-400">${s.total_frames || 0} frames · ${durationStr}</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-xl font-bold ${scoreColor}">${s.attention_score != null ? s.attention_score + '%' : '—'}</p>
-                                <p class="text-[10px] text-white/30 uppercase">Attention</p>
+                                <p class="text-xl font-semibold ${scoreColor}">${s.attention_score != null ? s.attention_score + '%' : '—'}</p>
+                                <p class="text-[10px] text-gray-400 dark:text-zinc-500 uppercase">Attention</p>
                             </div>
                         </div>
                     `;
@@ -414,36 +588,36 @@
         // === CLEAR / RESET ===
 
         document.getElementById('clearHistoryBtn').addEventListener('click', async () => {
-            if (!confirm('⚠️ This will permanently delete ALL sessions and detection data. Are you sure?')) return;
+            if (!confirm('This will permanently delete all sessions and detection data. Continue?')) return;
             try {
                 const res = await fetch('/api/sessions', { method: 'DELETE' });
                 const json = await res.json();
                 if (json.success) {
-                    alert('✅ All history cleared successfully.');
+                    alert('All history cleared successfully.');
                     refreshAll();
                 } else {
-                    alert('❌ Failed to clear history: ' + (json.error || 'Unknown error'));
+                    alert('Failed to clear history: ' + (json.error || 'Unknown error'));
                 }
             } catch (err) {
                 console.error('Error clearing history:', err);
-                alert('❌ Error clearing history.');
+                alert('Error clearing history.');
             }
         });
 
         document.getElementById('resetDashboardBtn').addEventListener('click', async () => {
-            if (!confirm('⚠️ This will clear all detection analytics data (sessions will be kept). Are you sure?')) return;
+            if (!confirm('This will clear all detection analytics data (sessions will be kept). Continue?')) return;
             try {
                 const res = await fetch('/api/detections', { method: 'DELETE' });
                 const json = await res.json();
                 if (json.success) {
-                    alert('✅ Dashboard data reset successfully.');
+                    alert('Dashboard data reset successfully.');
                     refreshAll();
                 } else {
-                    alert('❌ Failed to reset dashboard: ' + (json.error || 'Unknown error'));
+                    alert('Failed to reset dashboard: ' + (json.error || 'Unknown error'));
                 }
             } catch (err) {
                 console.error('Error resetting dashboard:', err);
-                alert('❌ Error resetting dashboard.');
+                alert('Error resetting dashboard.');
             }
         });
 

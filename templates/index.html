@@ -7,27 +7,46 @@
     <title>Attentiveness Tracker — AI-Powered Focus Monitoring</title>
     <meta name="description"
         content="Monitor your attentiveness in real-time using AI-powered webcam analysis. Track focus, detect drowsiness, and improve productivity.">
+
+    <!-- Load Tailwind FIRST -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Then configure it -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        };
+    </script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 
-<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen text-white">
+<body class="bg-gray-50 text-gray-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen">
     <!-- Navigation -->
-    <nav class="bg-white/5 backdrop-blur-xl border-b border-white/10">
+    <nav class="bg-white/80 dark:bg-zinc-950/80 backdrop-blur border-b border-gray-200/70 dark:border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <h1
-                        class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-                        🎯 Attentiveness Tracker</h1>
+                <div class="flex items-center gap-3">
+                    <span class="h-9 w-9 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                        <i data-lucide="scan-face" class="h-5 w-5"></i>
+                    </span>
+                    <h1 class="text-lg font-semibold tracking-tight">Attentiveness Tracker</h1>
                 </div>
-                <div class="flex items-center space-x-1">
-                    <a href="/"
-                        class="text-white bg-indigo-500/20 px-4 py-2 rounded-lg border border-indigo-400/30 font-medium">Home</a>
-                    <a href="/detection"
-                        class="text-white/70 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium">Detection</a>
-                    <a href="/dashboard"
-                        class="text-white/70 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 font-medium">Dashboard</a>
+                <div class="flex items-center gap-2">
+                    <div class="hidden md:flex items-center gap-1 rounded-full bg-white/70 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 px-2 py-1">
+                        <a href="/"
+                            class="px-4 py-1.5 text-sm font-medium rounded-full bg-indigo-600/10 text-indigo-600 dark:text-indigo-300">Home</a>
+                        <a href="/detection"
+                            class="px-4 py-1.5 text-sm font-medium rounded-full text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition">Detection</a>
+                        <a href="/dashboard"
+                            class="px-4 py-1.5 text-sm font-medium rounded-full text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition">Dashboard</a>
+                    </div>
+                    <button id="themeToggle"
+                        class="h-10 w-10 rounded-full border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-zinc-900/70 hover:bg-gray-100 dark:hover:bg-zinc-800/80 transition flex items-center justify-center">
+                        <i data-lucide="sun" class="h-4 w-4 dark:hidden"></i>
+                        <i data-lucide="moon" class="h-4 w-4 hidden dark:block"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -36,31 +55,29 @@
     <!-- Hero Section -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div class="text-center mb-20">
-            <!-- Floating badge -->
             <div
-                class="inline-flex items-center px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-medium mb-8">
-                <span class="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></span>
+                class="inline-flex items-center px-4 py-1.5 rounded-full bg-indigo-600/10 border border-indigo-600/20 text-indigo-600 dark:text-indigo-300 text-sm font-medium mb-8">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
                 Powered by Roboflow AI
             </div>
 
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
-                Monitor Your<br>
-                <span
-                    class="bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Attentiveness</span>
-                in Real-Time
+            <h2 class="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+                Monitor your
+                <span class="text-indigo-600 dark:text-indigo-300">attentiveness</span>
+                in real time
             </h2>
-            <p class="text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-                AI-powered webcam analysis detects your focus state — awake, sleepy, or bored — with
-                temporal smoothing for high accuracy. Track sessions, view analytics, and improve your productivity.
+            <p class="text-lg text-gray-600 dark:text-zinc-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+                AI-powered webcam analysis detects your focus state with temporal smoothing for higher accuracy.
+                Track sessions, review analytics, and improve focus efficiency.
             </p>
-            <div class="flex justify-center gap-4">
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
                 <a href="/detection"
-                    class="bg-indigo-500 hover:bg-indigo-400 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-400/40 hover:scale-105 active:scale-95">
-                    🚀 Start Tracking
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.99]">
+                    Start Tracking
                 </a>
                 <a href="/dashboard"
-                    class="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-8 py-4 rounded-xl text-lg font-medium transition-all duration-300">
-                    📊 View Dashboard
+                    class="bg-white hover:bg-gray-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-zinc-200 px-8 py-4 rounded-xl text-lg font-medium transition-all duration-200 hover:scale-[1.02]">
+                    View Dashboard
                 </a>
             </div>
         </div>
@@ -68,113 +85,128 @@
         <!-- Features Grid -->
         <div class="grid md:grid-cols-3 gap-6 mb-20">
             <div
-                class="group bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-indigo-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/5">
+                class="group bg-white dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 p-8 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
                 <div
-                    class="w-14 h-14 bg-indigo-500/10 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition-transform duration-300">
-                    📹</div>
-                <h3 class="text-xl font-bold text-white mb-3">Real-Time Detection</h3>
-                <p class="text-white/40 text-sm leading-relaxed">
+                    class="w-12 h-12 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 flex items-center justify-center mb-5 group-hover:scale-[1.05] transition">
+                    <i data-lucide="video" class="h-5 w-5"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Real-time detection</h3>
+                <p class="text-gray-600 dark:text-zinc-400 text-sm leading-relaxed">
                     Live webcam feed with instant classification. Temporal smoothing reduces noise for reliable results.
                 </p>
             </div>
             <div
-                class="group bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-cyan-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-500/5">
+                class="group bg-white dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 p-8 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
                 <div
-                    class="w-14 h-14 bg-cyan-500/10 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition-transform duration-300">
-                    📊</div>
-                <h3 class="text-xl font-bold text-white mb-3">Interactive Analytics</h3>
-                <p class="text-white/40 text-sm leading-relaxed">
-                    Chart.js powered dashboard with confidence trends, class distribution, and session-by-session
-                    breakdowns.
+                    class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 flex items-center justify-center mb-5 group-hover:scale-[1.05] transition">
+                    <i data-lucide="bar-chart-3" class="h-5 w-5"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Interactive analytics</h3>
+                <p class="text-gray-600 dark:text-zinc-400 text-sm leading-relaxed">
+                    Dashboard with confidence trends, class distribution, and session-by-session insights.
                 </p>
             </div>
             <div
-                class="group bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:border-emerald-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/5">
+                class="group bg-white dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 p-8 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
                 <div
-                    class="w-14 h-14 bg-emerald-500/10 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition-transform duration-300">
-                    🔔</div>
-                <h3 class="text-xl font-bold text-white mb-3">Smart Alerts</h3>
-                <p class="text-white/40 text-sm leading-relaxed">
-                    Alerts only trigger after sustained inattention — no false alarms. Configurable sound and
-                    sensitivity.
+                    class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 flex items-center justify-center mb-5 group-hover:scale-[1.05] transition">
+                    <i data-lucide="bell" class="h-5 w-5"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Smart alerts</h3>
+                <p class="text-gray-600 dark:text-zinc-400 text-sm leading-relaxed">
+                    Alerts trigger only after sustained inattention, with configurable sound and sensitivity.
                 </p>
             </div>
         </div>
 
         <!-- How It Works -->
-        <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-10 mb-20">
-            <h3 class="text-3xl font-bold text-center text-white mb-12">How It Works</h3>
+        <div class="bg-white dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 rounded-2xl p-10 mb-20 shadow-sm">
+            <h3 class="text-3xl font-semibold text-center text-gray-900 dark:text-white mb-12">How it works</h3>
             <div class="grid md:grid-cols-4 gap-8">
                 <div class="text-center group">
                     <div
-                        class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
-                        <span class="text-2xl font-black text-white">1</span>
+                        class="w-14 h-14 bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <span class="text-lg font-semibold">1</span>
                     </div>
-                    <h4 class="font-bold text-white mb-2">Allow Camera</h4>
-                    <p class="text-sm text-white/40">Grant permission for webcam access</p>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Allow camera</h4>
+                    <p class="text-sm text-gray-600 dark:text-zinc-400">Grant permission for webcam access</p>
                 </div>
                 <div class="text-center group">
                     <div
-                        class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-500/20 group-hover:scale-110 transition-transform">
-                        <span class="text-2xl font-black text-white">2</span>
+                        class="w-14 h-14 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <span class="text-lg font-semibold">2</span>
                     </div>
-                    <h4 class="font-bold text-white mb-2">AI Analysis</h4>
-                    <p class="text-sm text-white/40">Roboflow model classifies your state</p>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">AI analysis</h4>
+                    <p class="text-sm text-gray-600 dark:text-zinc-400">Model classifies your state</p>
                 </div>
                 <div class="text-center group">
                     <div
-                        class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-                        <span class="text-2xl font-black text-white">3</span>
+                        class="w-14 h-14 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <span class="text-lg font-semibold">3</span>
                     </div>
-                    <h4 class="font-bold text-white mb-2">Real-Time Feedback</h4>
-                    <p class="text-sm text-white/40">Bounding boxes and attention score live</p>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Live feedback</h4>
+                    <p class="text-sm text-gray-600 dark:text-zinc-400">Bounding boxes and attention score</p>
                 </div>
                 <div class="text-center group">
                     <div
-                        class="w-16 h-16 bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform">
-                        <span class="text-2xl font-black text-white">4</span>
+                        class="w-14 h-14 bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <span class="text-lg font-semibold">4</span>
                     </div>
-                    <h4 class="font-bold text-white mb-2">Track Progress</h4>
-                    <p class="text-sm text-white/40">Interactive dashboard with session history</p>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Track progress</h4>
+                    <p class="text-sm text-gray-600 dark:text-zinc-400">Interactive dashboard with history</p>
                 </div>
             </div>
         </div>
 
         <!-- Tech Stack -->
         <div class="text-center mb-20">
-            <p class="text-xs text-white/30 uppercase tracking-widest mb-4">Built With</p>
+            <p class="text-xs text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-4">Built with</p>
             <div class="flex justify-center flex-wrap gap-3">
                 <span
-                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">FastAPI</span>
+                    class="px-4 py-2 bg-white dark:bg-zinc-900/70 border border-gray-200 dark:border-white/10 rounded-full text-sm text-gray-500 dark:text-zinc-300 font-medium">FastAPI</span>
                 <span
-                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">Roboflow</span>
+                    class="px-4 py-2 bg-white dark:bg-zinc-900/70 border border-gray-200 dark:border-white/10 rounded-full text-sm text-gray-500 dark:text-zinc-300 font-medium">Roboflow</span>
                 <span
-                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">OpenCV</span>
+                    class="px-4 py-2 bg-white dark:bg-zinc-900/70 border border-gray-200 dark:border-white/10 rounded-full text-sm text-gray-500 dark:text-zinc-300 font-medium">OpenCV</span>
                 <span
-                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">Chart.js</span>
+                    class="px-4 py-2 bg-white dark:bg-zinc-900/70 border border-gray-200 dark:border-white/10 rounded-full text-sm text-gray-500 dark:text-zinc-300 font-medium">Chart.js</span>
                 <span
-                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">SQLite</span>
+                    class="px-4 py-2 bg-white dark:bg-zinc-900/70 border border-gray-200 dark:border-white/10 rounded-full text-sm text-gray-500 dark:text-zinc-300 font-medium">SQLite</span>
                 <span
-                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/50 font-medium">TailwindCSS</span>
+                    class="px-4 py-2 bg-white dark:bg-zinc-900/70 border border-gray-200 dark:border-white/10 rounded-full text-sm text-gray-500 dark:text-zinc-300 font-medium">TailwindCSS</span>
             </div>
         </div>
 
         <!-- CTA -->
         <div class="text-center">
-            <h3 class="text-3xl font-bold text-white mb-6">Ready to Improve Your Focus?</h3>
+            <h3 class="text-3xl font-semibold text-gray-900 dark:text-white mb-6">Ready to improve your focus?</h3>
             <a href="/detection"
-                class="inline-block bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-white px-12 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-400/40 hover:scale-105 active:scale-95">
-                Get Started →
+                class="inline-block bg-indigo-600 hover:bg-indigo-500 text-white px-12 py-4 rounded-xl text-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.99]">
+                Get Started
             </a>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white/5 border-t border-white/10 mt-20 py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white/30 text-sm">
+    <footer class="bg-white/80 dark:bg-zinc-950/80 border-t border-gray-200/70 dark:border-white/10 mt-20 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 dark:text-zinc-400 text-sm">
             <p>&copy; 2026 Attentiveness Tracker. Powered by Roboflow AI &amp; Computer Vision.</p>
         </div>
     </footer>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const storedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+            document.documentElement.classList.add('dark');
+        }
+        themeToggle?.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+        lucide.createIcons();
+    </script>
 </body>
 
 </html>

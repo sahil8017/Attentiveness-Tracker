@@ -50,22 +50,22 @@ const CLIENT_BUFFER_SIZE = 5;
 
 // Color map for states
 const STATE_COLORS = {
-    awake: { bg: 'from-emerald-500/20 to-emerald-500/5', text: 'text-emerald-400', box: '#34d399', timeline: '#34d399' },
-    sleepy: { bg: 'from-amber-500/20 to-amber-500/5', text: 'text-amber-400', box: '#fbbf24', timeline: '#fbbf24' },
-    bored: { bg: 'from-red-500/20 to-red-500/5', text: 'text-red-400', box: '#f87171', timeline: '#f87171' }
+    awake: { bg: 'from-emerald-500/20 to-emerald-500/5', text: 'text-emerald-600 dark:text-emerald-300', box: '#34d399', timeline: '#34d399' },
+    sleepy: { bg: 'from-amber-500/20 to-amber-500/5', text: 'text-amber-600 dark:text-amber-300', box: '#fbbf24', timeline: '#fbbf24' },
+    bored: { bg: 'from-rose-500/20 to-rose-500/5', text: 'text-rose-600 dark:text-rose-300', box: '#fb7185', timeline: '#fb7185' }
 };
 
 // === UTILITY FUNCTIONS ===
 
 function updateStatus(message, type = 'info') {
     statusText.textContent = message;
-    statusDiv.className = 'mb-5 p-3 rounded-xl text-center font-semibold text-sm transition-all duration-300';
+    statusDiv.className = 'mb-6 p-3 rounded-xl text-center font-medium text-sm transition-all duration-200';
 
     const styles = {
-        success: 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400',
-        error: 'bg-red-500/10 border border-red-500/30 text-red-400',
-        warning: 'bg-amber-500/10 border border-amber-500/30 text-amber-400',
-        info: 'bg-white/5 border border-white/10 text-white/60'
+        success: 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300',
+        error: 'bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300',
+        warning: 'bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300',
+        info: 'bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-zinc-400'
     };
     statusDiv.className += ' ' + (styles[type] || styles.info);
 }
@@ -92,6 +92,12 @@ function updateAttentionScore() {
     }
     const score = Math.round((attentiveFrames / totalFrames) * 100);
     attentionScoreDisplay.textContent = score;
+    attentionScoreDisplay.className = score >= 70
+        ? 'text-3xl font-semibold text-emerald-600 dark:text-emerald-300'
+        : score >= 40
+            ? 'text-3xl font-semibold text-amber-600 dark:text-amber-300'
+            : 'text-3xl font-semibold text-rose-600 dark:text-rose-300';
+    attentionScoreDisplay.setAttribute('data-score', score);
 }
 
 function addTimelineSegment(state) {
@@ -144,7 +150,7 @@ async function startWebcam() {
         return true;
     } catch (error) {
         console.error('Error accessing webcam:', error);
-        updateStatus('❌ Could not access webcam. Please check permissions.', 'error');
+        updateStatus('Camera access failed. Please check permissions.', 'error');
         return false;
     }
 }
@@ -194,8 +200,8 @@ async function detectAttentiveness() {
         if (data.success) {
             // Handle fully skipped frames (no previous state available)
             if (data.skipped) {
-                blurOverlay.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-mono bg-amber-500/20 text-amber-400 border border-amber-500/30';
-                blurText.textContent = `⚠ Blurry (${data.blur_score})`;
+                blurOverlay.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-mono bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/30';
+                blurText.textContent = `Frame blurred (${data.blur_score})`;
                 blurOverlay.classList.remove('hidden');
                 // DON'T return early — keep detection loop running
                 return;
@@ -203,8 +209,8 @@ async function detectAttentiveness() {
 
             // Show blur indicator (reduced opacity) if blurry but using cached state
             if (data.blurry) {
-                blurOverlay.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-mono bg-amber-500/10 text-amber-300/60 border border-amber-500/20';
-                blurText.textContent = `⚡ Cached (${data.blur_score})`;
+                blurOverlay.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-mono bg-amber-500/5 text-amber-600/70 dark:text-amber-200/70 border border-amber-500/20';
+                blurText.textContent = `Using cached frame (${data.blur_score})`;
                 blurOverlay.classList.remove('hidden');
             } else {
                 blurOverlay.classList.add('hidden');
@@ -283,8 +289,8 @@ async function detectAttentiveness() {
                     hideAlert();
                 }
             } else {
-                currentStateDisplay.textContent = 'No Face';
-                currentStateDisplay.className = 'text-2xl font-bold text-white/40';
+                currentStateDisplay.textContent = 'No face';
+                currentStateDisplay.className = 'text-2xl font-bold text-gray-400 dark:text-zinc-500';
                 confidenceDisplay.textContent = '—';
                 hideAlert();
             }
@@ -296,7 +302,7 @@ async function detectAttentiveness() {
         console.error('Detection error:', error);
 
         if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-            updateStatus(`⚠ Multiple errors. Check connection. Retrying...`, 'warning');
+            updateStatus('Multiple errors detected. Retrying connection...', 'warning');
         }
         // Keep detection loop running — don't crash on transient errors
     } finally {
@@ -362,7 +368,7 @@ async function endCurrentSession() {
 async function startDetection() {
     if (isTracking) return;
 
-    updateStatus('🔄 Initializing...', 'info');
+    updateStatus('Initializing detection...', 'info');
     startBtn.disabled = true;
 
     const webcamStarted = await startWebcam();
@@ -373,7 +379,7 @@ async function startDetection() {
 
     const sessionCreated = await createSession();
     if (!sessionCreated) {
-        updateStatus('❌ Failed to create session', 'error');
+        updateStatus('Failed to create session.', 'error');
         stopWebcam();
         startBtn.disabled = false;
         return;
@@ -390,11 +396,13 @@ async function startDetection() {
     timeline.innerHTML = '';
     frameCountDisplay.textContent = '0';
     attentionScoreDisplay.textContent = '—';
+    attentionScoreDisplay.className = 'text-3xl font-semibold text-indigo-600 dark:text-indigo-300';
 
-    updateStatus('🟢 Detection Active', 'success');
+    updateStatus('Detection active', 'success');
     startBtn.disabled = true;
     stopBtn.disabled = false;
     startSessionTimer();
+    document.querySelector('.hud-shell')?.classList.add('hud-active');
 
     const interval = parseInt(detectionIntervalSelect.value, 10);
     detectionInterval = setInterval(detectAttentiveness, interval);
@@ -419,12 +427,14 @@ async function stopDetection() {
 
     await endCurrentSession();
 
-    updateStatus('⏸ Session complete. Click "Start Detection" for a new session.', 'info');
+    updateStatus('Session complete. Click "Start Detection" for a new session.', 'info');
     startBtn.disabled = false;
     stopBtn.disabled = true;
+    document.querySelector('.hud-shell')?.classList.remove('hud-active');
     currentStateDisplay.textContent = '—';
-    currentStateDisplay.className = 'text-2xl font-bold text-white/80';
+    currentStateDisplay.className = 'text-2xl font-semibold text-gray-800 dark:text-zinc-100';
     confidenceDisplay.textContent = '—';
+    attentionScoreDisplay.className = 'text-3xl font-semibold text-indigo-600 dark:text-indigo-300';
     hideAlert();
 }
 
