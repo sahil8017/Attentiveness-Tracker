@@ -104,8 +104,8 @@ The application is built on a high-performance asynchronous, non-blocking archit
 
 This final version marks the successful conclusion of development. A massive thank you to the AI assistants that helped architect, build, refactor, and scale this application from a simple Flask script into a production-grade FastAPI monolith:
 
-- **Claude 3.7 Sonnet** 
-- **Gemini 1.5 Pro**
+- **Claude 4.6 Opus** 
+- **Gemini 3.1 Pro**
 - **Antigravity (Google DeepMind)**
 
 ---
