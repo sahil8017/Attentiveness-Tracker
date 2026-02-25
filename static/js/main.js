@@ -384,23 +384,32 @@ function playAlertSound() {
 // === SESSION MANAGEMENT ===
 
 async function createSession() {
-    try {
-        const res = await apiFetch('/api/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ device_id: deviceId }),
-        });
-        const data = await res.json();
-        if (data.success) {
-            sessionId = data.session_id;
-            sessionIdDisplay.textContent = sessionId.replace('session-', '');
-            sessionBadge.classList.remove('hidden');
-            return true;
-        }
-    } catch (e) {
-        console.error('Failed to create session:', e);
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        window.location.href = "/login";
+        return null;
     }
-    return false;
+
+    const response = await fetch("/api/sessions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if (response.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return null;
+    }
+
+    if (!response.ok) {
+        throw new Error("Failed to create session");
+    }
+
+    return await response.json();
 }
 
 async function endCurrentSession() {
