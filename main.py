@@ -2,28 +2,38 @@
 Attentiveness Tracker — FastAPI Application
 =============================================
 Real-time attentiveness detection using Roboflow AI (RF-DETR Nano)
-with session management, temporal smoothing, and interactive analytics.
+with session management, temporal smoothing, interactive analytics,
+and JWT-based multi-user authentication.
 
 Uses direct Roboflow Inference HTTP API (httpx) for fast async predictions.
 """
 
 import cv2
+import csv
+import io
 import base64
 import uuid
 import logging
 import numpy as np
 import httpx
+from datetime import datetime
 from collections import deque
 from contextlib import asynccontextmanager
+from typing import Optional
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from sqlalchemy.orm import Session as DBSession
+from sqlalchemy import func
 
 from config import Config
-from database import Database
+from db import init_db, get_db
+from models import Session, Detection, User
+from auth import get_current_user, get_optional_user
+from routes.auth_routes import router as auth_router
 
 # === LOGGING ===
 logging.basicConfig(
@@ -37,14 +47,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # === GLOBALS (initialized at startup) ===
-db: Database = None
 http_client: httpx.AsyncClient = None
 
 # === IN-MEMORY STATE ===
 smoothing_buffers = {}
 frame_counters = {}
 alert_counters = {}
-last_known_states = {}  # Track last known state per session for blur fallback
+last_known_states = {}
 
 
 # === PYDANTIC MODELS ===
@@ -52,6 +61,9 @@ last_known_states = {}  # Track last known state per session for blur fallback
 class PredictRequest(BaseModel):
     image: str
     session_id: str = "default"
+
+class CreateSessionRequest(BaseModel):
+    device_id: Optional[str] = None
 
 class SuccessResponse(BaseModel):
     success: bool = True
@@ -94,18 +106,18 @@ def should_alert(session_id, smoothed_class):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown logic."""
-    global db, http_client
+    global http_client
 
     logger.info("=" * 50)
-    logger.info("Attentiveness Tracker v2.1 — Starting")
+    logger.info("Attentiveness Tracker v3.0 — Starting")
     logger.info("=" * 50)
 
     # Validate config
     Config.validate()
 
-    # Initialize database
-    db = Database(Config.DATABASE_PATH)
-    logger.info(f"Database initialized: {Config.DATABASE_PATH}")
+    # Initialize SQLAlchemy database
+    init_db(Config.DATABASE_URL)
+    logger.info(f"Database initialized: {Config.DATABASE_URL.split('@')[-1] if '@' in Config.DATABASE_URL else Config.DATABASE_URL}")
 
     # Initialize async HTTP client with connection pooling
     http_client = httpx.AsyncClient(
@@ -136,8 +148,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Attentiveness Tracker",
-    description="AI-powered real-time focus monitoring",
-    version="2.1.0",
+    description="AI-powered real-time focus monitoring with multi-user auth",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -147,8 +159,11 @@ app.mount("/static", StaticFiles(directory=Config.BASE_DIR / "static"), name="st
 # Templates
 templates = Jinja2Templates(directory=Config.BASE_DIR / "templates")
 
+# Include auth router
+app.include_router(auth_router)
 
-# === PAGE ROUTES ===
+
+# === PAGE ROUTES (public) ===
 
 @app.get("/")
 async def index(request: Request):
@@ -156,7 +171,7 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/detection")
-async def detection(request: Request):
+async def detection_page(request: Request):
     """Live detection page."""
     return templates.TemplateResponse("detection.html", {
         "request": request,
@@ -168,9 +183,19 @@ async def detection(request: Request):
     })
 
 @app.get("/dashboard")
-async def dashboard(request: Request):
+async def dashboard_page(request: Request):
     """Analytics dashboard page."""
     return templates.TemplateResponse("dashboard.html", {"request": request})
+
+@app.get("/login")
+async def login_page(request: Request):
+    """Login page."""
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/register")
+async def register_page(request: Request):
+    """Registration page."""
+    return templates.TemplateResponse("register.html", {"request": request})
 
 
 # === API ENDPOINTS ===
@@ -178,98 +203,205 @@ async def dashboard(request: Request):
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "version": "2.1.0", "model": Config.ROBOFLOW_PROJECT}
+    return {"status": "healthy", "version": "3.0.0", "model": Config.ROBOFLOW_PROJECT}
+
+
+# --- Session Management (protected) ---
 
 @app.post("/api/sessions")
-async def create_session():
-    """Create a new detection session."""
+def create_session(
+    data: CreateSessionRequest = CreateSessionRequest(),
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Create a new detection session (requires auth)."""
     try:
         session_id = f"session-{uuid.uuid4().hex[:12]}"
-        db.create_session(session_id)
-        logger.info(f"Session created: {session_id}")
+        session = Session(
+            id=session_id,
+            user_id=current_user.id,
+            device_id=data.device_id,
+            start_time=datetime.utcnow(),
+        )
+        db.add(session)
+        db.commit()
+        logger.info(f"Session created: {session_id} (user={current_user.id}, device={data.device_id})")
         return {"success": True, "session_id": session_id}
     except Exception as e:
+        db.rollback()
         logger.error(f"Failed to create session: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
+
 @app.post("/api/sessions/{session_id}/end")
-async def end_session(session_id: str):
-    """End a detection session."""
+def end_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """End a detection session and compute attention score (requires auth)."""
     try:
-        result = db.end_session(session_id)
+        session = db.query(Session).filter(
+            Session.id == session_id,
+            Session.user_id == current_user.id,
+        ).first()
+        if not session:
+            return JSONResponse({"success": False, "error": "Session not found"}, status_code=404)
+
+        # Calculate attention score from detections
+        total = db.query(func.count(Detection.id)).filter(
+            Detection.session_id == session_id
+        ).scalar() or 0
+
+        attentive = db.query(func.count(Detection.id)).filter(
+            Detection.session_id == session_id,
+            Detection.class_name == "awake",
+        ).scalar() or 0
+
+        score = round((attentive / total * 100), 1) if total > 0 else 0.0
+
+        session.end_time = datetime.utcnow()
+        session.total_frames = total
+        session.attention_score = score
+        db.commit()
+
         # Cleanup in-memory state
         smoothing_buffers.pop(session_id, None)
         frame_counters.pop(session_id, None)
         alert_counters.pop(session_id, None)
         last_known_states.pop(session_id, None)
-        logger.info(f"Session ended: {session_id}")
-        return {"success": True, "attention_score": result.get("attention_score")}
+
+        logger.info(f"Session ended: {session_id} (score={score}%)")
+        return {"success": True, "attention_score": score}
     except Exception as e:
+        db.rollback()
         logger.error(f"Failed to end session: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
+
 @app.get("/api/sessions")
-async def list_sessions(limit: int = 20):
-    """List recent detection sessions."""
+def list_sessions(
+    limit: int = 20,
+    device_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """List recent sessions for the current user (requires auth)."""
     try:
-        sessions = db.get_sessions(limit)
-        return {"success": True, "sessions": sessions}
+        query = db.query(Session).filter(Session.user_id == current_user.id)
+        if device_id:
+            query = query.filter(Session.device_id == device_id)
+        sessions = query.order_by(Session.start_time.desc()).limit(limit).all()
+        return {"success": True, "sessions": [s.to_dict() for s in sessions]}
     except Exception as e:
         logger.error(f"Failed to list sessions: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
+
 @app.delete("/api/sessions/{session_id}")
-async def delete_session(session_id: str):
-    """Delete a specific session and its detections."""
+def delete_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Delete a specific session (requires auth, must own session)."""
     try:
-        db.delete_session(session_id)
+        session = db.query(Session).filter(
+            Session.id == session_id,
+            Session.user_id == current_user.id,
+        ).first()
+        if not session:
+            return JSONResponse({"success": False, "error": "Session not found"}, status_code=404)
+
+        db.delete(session)  # cascade will delete detections
+        db.commit()
+
         smoothing_buffers.pop(session_id, None)
         frame_counters.pop(session_id, None)
         alert_counters.pop(session_id, None)
         last_known_states.pop(session_id, None)
+
         logger.info(f"Session deleted: {session_id}")
         return {"success": True, "message": f"Session {session_id} deleted"}
     except Exception as e:
+        db.rollback()
         logger.error(f"Failed to delete session: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
+
 @app.delete("/api/sessions")
-async def clear_all_sessions():
-    """Delete ALL sessions and detection data."""
+def clear_all_sessions(
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Delete ALL sessions for the current user."""
     try:
-        db.clear_all_sessions()
-        smoothing_buffers.clear()
-        frame_counters.clear()
-        alert_counters.clear()
-        last_known_states.clear()
-        logger.info("All sessions cleared")
+        user_sessions = db.query(Session).filter(Session.user_id == current_user.id).all()
+        for s in user_sessions:
+            smoothing_buffers.pop(s.id, None)
+            frame_counters.pop(s.id, None)
+            alert_counters.pop(s.id, None)
+            last_known_states.pop(s.id, None)
+            db.delete(s)
+        db.commit()
+        logger.info(f"All sessions cleared for user {current_user.id}")
         return {"success": True, "message": "All sessions and data cleared"}
     except Exception as e:
+        db.rollback()
         logger.error(f"Failed to clear sessions: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
+
 @app.delete("/api/detections")
-async def clear_all_detections():
-    """Delete ALL detection records (reset dashboard analytics)."""
+def clear_all_detections(
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Delete ALL detection records for the current user (reset dashboard)."""
     try:
-        db.clear_all_detections()
-        logger.info("All detection data cleared")
+        # Get all session IDs for this user
+        session_ids = [s.id for s in db.query(Session.id).filter(
+            Session.user_id == current_user.id
+        ).all()]
+
+        if session_ids:
+            db.query(Detection).filter(Detection.session_id.in_(session_ids)).delete(synchronize_session=False)
+            db.query(Session).filter(Session.id.in_(session_ids)).update(
+                {"total_frames": 0, "attention_score": 0.0},
+                synchronize_session=False,
+            )
+            db.commit()
+
+        logger.info(f"All detection data cleared for user {current_user.id}")
         return {"success": True, "message": "All detection data cleared"}
     except Exception as e:
+        db.rollback()
         logger.error(f"Failed to clear detections: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
+# --- Prediction (protected) ---
+
 @app.post("/predict")
-async def predict(data: PredictRequest):
+async def predict(
+    data: PredictRequest,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
     """
     Receives a base64 image and returns Roboflow predictions
-    with temporal smoothing and quality checks.
-
-    Uses direct HTTP API call to Roboflow Inference — no temp files.
+    with temporal smoothing and quality checks (requires auth).
     """
     try:
         session_id = data.session_id
+
+        # Verify session belongs to user
+        session = db.query(Session).filter(
+            Session.id == session_id,
+            Session.user_id == current_user.id,
+        ).first()
+        if not session:
+            return JSONResponse({"error": "Session not found or unauthorized"}, status_code=403)
 
         # Initialize frame counter for session
         if session_id not in frame_counters:
@@ -287,33 +419,27 @@ async def predict(data: PredictRequest):
         # Frame quality check
         is_clear, blur_score = check_frame_quality(frame)
         if not is_clear:
-            # Graceful degradation: return last known state instead of skipping
             last_state = last_known_states.get(session_id)
             if last_state:
                 return {
-                    "success": True,
-                    "skipped": False,
-                    "blurry": True,
+                    "success": True, "skipped": False, "blurry": True,
                     "blur_score": blur_score,
                     "predictions": last_state["predictions"],
                     "frame_id": last_state["frame_id"],
                     "trigger_alert": False,
                 }
             else:
-                # No previous state — still return skipped but with lower priority
                 return {
-                    "success": True,
-                    "skipped": True,
+                    "success": True, "skipped": True,
                     "reason": "Frame too blurry (waiting for clear frame)",
-                    "blur_score": blur_score,
-                    "predictions": []
+                    "blur_score": blur_score, "predictions": [],
                 }
 
         # Increment frame counter
         frame_counters[session_id] += 1
         frame_id = frame_counters[session_id]
 
-        # Send base64 directly to Roboflow Inference API (no temp file!)
+        # Send to Roboflow Inference API
         response = await http_client.post(
             app.state.inference_url,
             data=img_data,
@@ -333,25 +459,30 @@ async def predict(data: PredictRequest):
             raw_class = pred["class"].lower()
             confidence = round(pred["confidence"], 3)
 
-            # Temporal smoothing
             smoothed = get_smoothed_class(session_id, raw_class)
 
-            # Check alert condition
             if should_alert(session_id, smoothed):
                 trigger_alert = True
 
             # Log to database
-            db.log_detection(session_id, raw_class, confidence, frame_id, smoothed)
+            detection = Detection(
+                session_id=session_id,
+                timestamp=datetime.utcnow(),
+                class_name=raw_class,
+                confidence=confidence,
+                frame_id=frame_id,
+                smoothed_class=smoothed,
+            )
+            db.add(detection)
 
             processed_predictions.append({
-                "x": pred["x"],
-                "y": pred["y"],
-                "width": pred["width"],
-                "height": pred["height"],
-                "class": raw_class,
-                "smoothed_class": smoothed,
-                "confidence": confidence
+                "x": pred["x"], "y": pred["y"],
+                "width": pred["width"], "height": pred["height"],
+                "class": raw_class, "smoothed_class": smoothed,
+                "confidence": confidence,
             })
+
+        db.commit()
 
         # Store last known state for blur fallback
         last_known_states[session_id] = {
@@ -364,18 +495,15 @@ async def predict(data: PredictRequest):
             "predictions": processed_predictions,
             "frame_id": frame_id,
             "blur_score": blur_score,
-            "trigger_alert": trigger_alert
+            "trigger_alert": trigger_alert,
         }
 
     except httpx.TimeoutException:
         logger.warning(f"Roboflow API timeout for session {data.session_id}")
-        # Return last known state on timeout
         last_state = last_known_states.get(data.session_id)
         if last_state:
             return {
-                "success": True,
-                "skipped": False,
-                "timeout": True,
+                "success": True, "skipped": False, "timeout": True,
                 "predictions": last_state["predictions"],
                 "frame_id": last_state["frame_id"],
                 "trigger_alert": False,
@@ -387,64 +515,154 @@ async def predict(data: PredictRequest):
         return JSONResponse({"error": f"Roboflow API error: {e.response.status_code}"}, status_code=502)
 
     except Exception as e:
+        db.rollback()
         logger.error(f"Prediction error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+# --- Analytics (protected) ---
+
 @app.get("/get_stats")
-async def get_stats(session_id: str = None):
-    """Returns statistics, optionally filtered by session."""
+def get_stats(
+    session_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Returns aggregate stats for the current user."""
     try:
-        stats = db.get_stats(session_id)
-        return stats
+        # Get user's session IDs
+        user_session_ids = [s.id for s in db.query(Session.id).filter(
+            Session.user_id == current_user.id
+        ).all()]
+
+        if session_id:
+            if session_id not in user_session_ids:
+                return {"total_frames": 0, "avg_confidence": 0, "classes": {}}
+            user_session_ids = [session_id]
+
+        if not user_session_ids:
+            return {"total_frames": 0, "avg_confidence": 0, "classes": {}}
+
+        q = db.query(
+            func.count(Detection.id).label("total_frames"),
+            func.round(func.avg(Detection.confidence), 3).label("avg_confidence"),
+        ).filter(Detection.session_id.in_(user_session_ids)).first()
+
+        class_rows = db.query(
+            Detection.class_name,
+            func.count(Detection.id).label("count"),
+        ).filter(
+            Detection.session_id.in_(user_session_ids)
+        ).group_by(Detection.class_name).order_by(func.count(Detection.id).desc()).all()
+
+        return {
+            "total_frames": q.total_frames or 0,
+            "avg_confidence": float(q.avg_confidence or 0),
+            "classes": {r.class_name: r.count for r in class_rows},
+        }
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
+
 @app.get("/api/chart_data")
-async def chart_data(session_id: str = None, limit: int = 500):
-    """Returns time-series data formatted for Chart.js."""
+def chart_data(
+    session_id: Optional[str] = None,
+    limit: int = 500,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Returns time-series data for Chart.js (user-scoped)."""
     try:
-        data = db.get_chart_data(session_id, limit)
-        return {"success": True, "data": data}
+        user_session_ids = [s.id for s in db.query(Session.id).filter(
+            Session.user_id == current_user.id
+        ).all()]
+
+        if session_id:
+            if session_id not in user_session_ids:
+                return {"success": True, "data": {"labels": [], "confidence": [], "classes": [], "frame_ids": []}}
+            user_session_ids = [session_id]
+
+        if not user_session_ids:
+            return {"success": True, "data": {"labels": [], "confidence": [], "classes": [], "frame_ids": []}}
+
+        rows = db.query(Detection).filter(
+            Detection.session_id.in_(user_session_ids)
+        ).order_by(Detection.timestamp.desc()).limit(limit).all()
+
+        data = list(reversed(rows))
+
+        return {
+            "success": True,
+            "data": {
+                "labels": [d.timestamp.isoformat() if d.timestamp else "" for d in data],
+                "confidence": [d.confidence for d in data],
+                "classes": [d.smoothed_class or d.class_name for d in data],
+                "frame_ids": [d.frame_id for d in data],
+            },
+        }
     except Exception as e:
         logger.error(f"Error getting chart data: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
+
 @app.get("/api/session_scores")
-async def session_scores(limit: int = 20):
-    """Returns attention scores across sessions for trend chart."""
+def session_scores(
+    limit: int = 20,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Attention scores across sessions for trend chart (user-scoped)."""
     try:
-        scores = db.get_session_scores(limit)
+        sessions = db.query(Session).filter(
+            Session.user_id == current_user.id,
+            Session.end_time.is_not(None),
+        ).order_by(Session.start_time.desc()).limit(limit).all()
+
+        scores = [s.to_dict() for s in reversed(sessions)]
         return {"success": True, "scores": scores}
     except Exception as e:
         logger.error(f"Error getting session scores: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
-@app.get("/api/export")
-async def export_data(session_id: str = None):
-    """Export detections as CSV."""
-    import csv
-    import io
 
+@app.get("/api/export")
+def export_data(
+    session_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Export detections as CSV (user-scoped)."""
     try:
-        detections = db.get_detections_for_export(session_id)
+        user_session_ids = [s.id for s in db.query(Session.id).filter(
+            Session.user_id == current_user.id
+        ).all()]
+
+        if session_id:
+            if session_id not in user_session_ids:
+                return JSONResponse({"error": "Session not found"}, status_code=404)
+            user_session_ids = [session_id]
+
+        detections = db.query(Detection).filter(
+            Detection.session_id.in_(user_session_ids)
+        ).order_by(Detection.timestamp.asc()).all()
 
         if not detections:
             return JSONResponse({"error": "No data to export"}, status_code=404)
 
         output = io.StringIO()
-        writer = csv.DictWriter(output, fieldnames=detections[0].keys())
+        fieldnames = ["timestamp", "class", "confidence", "frame_id", "smoothed_class", "session_id"]
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(detections)
+        for d in detections:
+            writer.writerow(d.to_dict())
 
         csv_content = output.getvalue()
-
         filename = f"attentiveness_export_{session_id or 'all'}.csv"
         return StreamingResponse(
             iter([csv_content]),
             media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
     except Exception as e:
         logger.error(f"Export error: {e}")
@@ -455,14 +673,12 @@ async def export_data(session_id: str = None):
 
 @app.exception_handler(404)
 async def not_found(request: Request, exc):
-    """Handle 404 errors."""
     if request.url.path.startswith("/api/"):
         return JSONResponse({"error": "Not found"}, status_code=404)
     return templates.TemplateResponse("index.html", {"request": request}, status_code=404)
 
 @app.exception_handler(500)
 async def server_error(request: Request, exc):
-    """Handle 500 errors."""
     logger.error(f"Internal server error: {exc}")
     if request.url.path.startswith("/api/"):
         return JSONResponse({"error": "Internal server error"}, status_code=500)
@@ -472,5 +688,5 @@ async def server_error(request: Request, exc):
 # === ENTRY POINT ===
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting Attentiveness Tracker (FastAPI)...")
+    logger.info("Starting Attentiveness Tracker (FastAPI v3.0)...")
     uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=Config.DEBUG)

@@ -4,41 +4,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics Dashboard - Attentiveness Tracker</title>
+    <title>Analytics Dashboard — Attentiveness Tracker</title>
 
-    <!-- Load Tailwind FIRST -->
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Then configure dark mode -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        };
-    </script>
+    <script>tailwind.config = { darkMode: 'class' };</script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
-    <!-- Lucide Icons -->
+    <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Your Custom Styles -->
+    <!-- Styles -->
     <link rel="stylesheet" href="/static/css/styles.css">
+
+    <!-- Theme init (prevents FOUC) -->
+    <script src="/static/js/nav.js"></script>
 </head>
 
 <body class="bg-gray-50 text-gray-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen">
     <!-- Navigation -->
-    <nav class="bg-white/80 dark:bg-zinc-950/80 backdrop-blur border-b border-gray-200/70 dark:border-white/10">
+    <nav
+        class="bg-white/80 dark:bg-zinc-950/80 backdrop-blur border-b border-gray-200/70 dark:border-white/10 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center gap-3">
-                    <span class="h-9 w-9 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                    <span
+                        class="h-9 w-9 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
                         <i data-lucide="scan-face" class="h-5 w-5"></i>
                     </span>
                     <h1 class="text-lg font-semibold tracking-tight">Attentiveness Tracker</h1>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="hidden md:flex items-center gap-1 rounded-full bg-white/70 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 px-2 py-1">
+                    <!-- Desktop Nav -->
+                    <div
+                        class="hidden md:flex items-center gap-1 rounded-full bg-white/70 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 px-2 py-1">
                         <a href="/"
                             class="px-4 py-1.5 text-sm font-medium rounded-full text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition">Home</a>
                         <a href="/detection"
@@ -46,143 +47,193 @@
                         <a href="/dashboard"
                             class="px-4 py-1.5 text-sm font-medium rounded-full bg-indigo-600/10 text-indigo-600 dark:text-indigo-300">Dashboard</a>
                     </div>
+                    <!-- Auth Nav -->
+                    <a href="/login"
+                        class="auth-login-link hidden md:inline-flex items-center px-4 py-1.5 text-sm font-medium rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-white/10 transition">Login</a>
+                    <div class="auth-user-btn hidden md:flex items-center gap-2">
+                        <span class="auth-email text-xs text-gray-500 dark:text-zinc-400"></span>
+                        <button
+                            class="auth-logout-btn h-9 px-3 rounded-full border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-white/10 transition">Logout</button>
+                    </div>
+                    <!-- Theme Toggle -->
                     <button id="themeToggle"
                         class="h-10 w-10 rounded-full border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-zinc-900/70 hover:bg-gray-100 dark:hover:bg-zinc-800/80 transition flex items-center justify-center">
                         <i data-lucide="sun" class="h-4 w-4 dark:hidden"></i>
                         <i data-lucide="moon" class="h-4 w-4 hidden dark:block"></i>
                     </button>
+                    <!-- Hamburger -->
+                    <button id="mobileMenuBtn"
+                        class="md:hidden h-10 w-10 rounded-full border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-zinc-900/70 hover:bg-gray-100 dark:hover:bg-zinc-800/80 transition flex items-center justify-center"
+                        aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobileMenu">
+                        <i data-lucide="menu" class="h-5 w-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobileMenu"
+            class="mobile-menu md:hidden border-t border-gray-200/70 dark:border-white/10 bg-white/95 dark:bg-zinc-950/95 backdrop-blur">
+            <div class="px-4 py-3 space-y-1">
+                <a href="/"
+                    class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-white/10 transition">Home</a>
+                <a href="/detection"
+                    class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-white/10 transition">Detection</a>
+                <a href="/dashboard"
+                    class="block px-4 py-2.5 rounded-xl text-sm font-medium bg-indigo-600/10 text-indigo-600 dark:text-indigo-300">Dashboard</a>
+                <a href="/login"
+                    class="auth-login-link block px-4 py-2.5 rounded-xl text-sm font-medium text-indigo-600 dark:text-indigo-300 hover:bg-indigo-600/10 transition">Login</a>
+                <div class="auth-user-btn hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5">
+                        <span class="auth-email text-xs text-gray-500 dark:text-zinc-400"></span>
+                        <button
+                            class="auth-logout-btn text-xs font-medium text-rose-500 hover:text-rose-400">Logout</button>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
         <!-- Header -->
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 sm:mb-8 gap-4">
             <div>
                 <div class="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300 mb-2">
                     <i data-lucide="line-chart" class="h-4 w-4"></i>
                     Analytics dashboard
                 </div>
-                <h2 class="text-3xl font-semibold">Session intelligence</h2>
-                <p class="text-gray-500 dark:text-zinc-400 text-sm mt-1">Track your attentiveness trends and insights.</p>
+                <h2 class="text-2xl sm:text-3xl font-semibold">Session intelligence</h2>
+                <p class="text-gray-500 dark:text-zinc-400 text-sm mt-1">Track your attentiveness trends and insights.
+                </p>
             </div>
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
                 <!-- Session Filter -->
-                <select id="sessionFilter"
-    class="appearance-none bg-white dark:bg-zinc-900 
-           border border-gray-300 dark:border-white/10 
-           rounded-xl px-4 pr-10 py-2.5 text-sm font-medium
-           text-gray-800 dark:text-zinc-200
-           shadow-sm hover:border-indigo-400 
-           focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 
-           transition-all duration-200 cursor-pointer">
-
-    <option value="">All Sessions</option>
-</select>
+                <select id="sessionFilter" class="appearance-none bg-white dark:bg-zinc-900 
+                           border border-gray-300 dark:border-white/10 
+                           rounded-xl px-4 pr-10 py-2.5 text-sm font-medium
+                           text-gray-800 dark:text-zinc-200
+                           shadow-sm hover:border-indigo-400 
+                           focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 
+                           transition-all duration-200 cursor-pointer
+                           flex-1 sm:flex-none min-w-0">
+                    <option value="">All Sessions</option>
+                </select>
                 <!-- Clear History -->
                 <button id="clearHistoryBtn"
-                    class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/40 text-rose-500 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                    class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/40 text-rose-500 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
                     title="Delete all sessions and data">
-                    Clear History
+                    Clear
                 </button>
                 <!-- Reset Dashboard -->
                 <button id="resetDashboardBtn"
-                    class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-600 dark:text-amber-300 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                    class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-600 dark:text-amber-300 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
                     title="Clear all detection data but keep sessions">
-                    Reset Dashboard
+                    Reset
                 </button>
                 <!-- Export Button -->
                 <button id="exportBtn"
-                    class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-zinc-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:border-indigo-300">
-                    Export CSV
+                    class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-zinc-200 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 hover:border-indigo-300">
+                    Export
                 </button>
                 <!-- Refresh -->
                 <button id="refreshBtn"
-                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md">
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md">
                     Refresh
                 </button>
             </div>
         </div>
 
         <!-- Stats Summary Cards -->
-        <div id="statsContainer" class="grid md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
-                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-2">Total frames</p>
-                <p id="totalFrames" class="text-3xl font-semibold text-gray-900 dark:text-white">—</p>
+        <div id="statsContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div
+                class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-5 shadow-sm">
+                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-1 sm:mb-2">Total frames
+                </p>
+                <p id="totalFrames" class="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">—</p>
             </div>
-            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
-                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-2">Avg confidence</p>
-                <p id="avgConfidence" class="text-3xl font-semibold text-indigo-600 dark:text-indigo-300">—</p>
+            <div
+                class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-5 shadow-sm">
+                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-1 sm:mb-2">Avg confidence
+                </p>
+                <p id="avgConfidence" class="text-2xl sm:text-3xl font-semibold text-indigo-600 dark:text-indigo-300">—
+                </p>
             </div>
-            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
-                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-2">Most common state</p>
-                <p id="commonState" class="text-3xl font-semibold text-gray-900 dark:text-white">—</p>
+            <div
+                class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-5 shadow-sm">
+                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-1 sm:mb-2">Most common
+                </p>
+                <p id="commonState" class="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">—</p>
             </div>
-            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
-                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-2">Sessions</p>
-                <p id="sessionCount" class="text-3xl font-semibold text-emerald-600 dark:text-emerald-300">—</p>
+            <div
+                class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-5 shadow-sm">
+                <p class="text-gray-400 dark:text-zinc-500 text-xs uppercase tracking-wider mb-1 sm:mb-2">Sessions</p>
+                <p id="sessionCount" class="text-2xl sm:text-3xl font-semibold text-emerald-600 dark:text-emerald-300">—
+                </p>
             </div>
         </div>
 
         <!-- Charts Grid -->
-        <div id="chartsContainer" class="space-y-6">
+        <div id="chartsContainer" class="space-y-4 sm:space-y-6">
             <!-- Confidence Over Time -->
-            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
+            <div
+                class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold">Confidence over time</h3>
+                    <h3 class="text-base sm:text-lg font-semibold">Confidence over time</h3>
                     <span class="text-xs text-gray-400 dark:text-zinc-500">Live signal</span>
                 </div>
-                <div class="relative" style="height: 300px;">
+                <div class="chart-container">
                     <canvas id="confidenceChart"></canvas>
                 </div>
             </div>
 
-            <div class="grid md:grid-cols-2 gap-6">
+            <div class="grid sm:grid-cols-2 gap-4 sm:gap-6">
                 <!-- Class Distribution -->
-                <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold mb-4">Class distribution</h3>
-                    <div class="relative" style="height: 280px;">
+                <div
+                    class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 shadow-sm">
+                    <h3 class="text-base sm:text-lg font-semibold mb-4">Class distribution</h3>
+                    <div class="chart-container-lg">
                         <canvas id="distributionChart"></canvas>
                     </div>
                 </div>
 
                 <!-- Average Confidence by Class -->
-                <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold mb-4">Avg confidence by class</h3>
-                    <div class="relative" style="height: 280px;">
+                <div
+                    class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 shadow-sm">
+                    <h3 class="text-base sm:text-lg font-semibold mb-4">Avg confidence by class</h3>
+                    <div class="chart-container-lg">
                         <canvas id="avgConfChart"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Session Attention Score Trend -->
-            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
-                <h3 class="text-lg font-semibold mb-4">Attention score trend</h3>
-                <div class="relative" style="height: 250px;">
+            <div
+                class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 shadow-sm">
+                <h3 class="text-base sm:text-lg font-semibold mb-4">Attention score trend</h3>
+                <div class="chart-container">
                     <canvas id="trendChart"></canvas>
                 </div>
             </div>
 
             <!-- Session History -->
-            <div class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
-                <h3 class="text-lg font-semibold mb-4">Session history</h3>
+            <div
+                class="bg-white dark:bg-zinc-900/60 rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 shadow-sm">
+                <h3 class="text-base sm:text-lg font-semibold mb-4">Session history</h3>
                 <div id="sessionHistory" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
-                    <!-- Populated dynamically -->
                 </div>
             </div>
         </div>
 
         <!-- No Data Message -->
-        <div id="noDataMessage" class="text-center py-20 hidden">
+        <div id="noDataMessage" class="text-center py-14 sm:py-20 hidden">
             <div class="flex justify-center mb-6">
-                <span class="h-14 w-14 rounded-2xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                <span
+                    class="h-14 w-14 rounded-2xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
                     <i data-lucide="inbox" class="h-6 w-6"></i>
                 </span>
             </div>
-            <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-3">No data yet</h3>
+            <h3 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-3">No data yet</h3>
             <p class="text-gray-500 dark:text-zinc-400 mb-6">Start a detection session to see analytics here.</p>
             <a href="/detection"
                 class="inline-block bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02]">
@@ -191,12 +242,17 @@
         </div>
     </main>
 
+    <script src="/static/js/auth.js"></script>
     <script>
-        const themeToggle = document.getElementById('themeToggle');
-        const storedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
-            document.documentElement.classList.add('dark');
+        // === AUTH GUARD ===
+        if (typeof AUTH !== 'undefined' && !AUTH.requireAuth()) {
+            throw new Error('Redirecting to login');
+        }
+
+        // Auth-aware fetch helper
+        async function apiFetch(url, options = {}) {
+            if (typeof AUTH !== 'undefined') return AUTH.apiFetch(url, options);
+            return fetch(url, options);
         }
 
         const ACCENT_COLOR = '#6366f1';
@@ -231,9 +287,7 @@
         };
 
         const createFadeGradient = (ctx, chartArea, color) => {
-            if (!chartArea) {
-                return hexToRgba(color, 0.18);
-            }
+            if (!chartArea) return hexToRgba(color, 0.18);
             const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
             gradient.addColorStop(0, hexToRgba(color, 0.35));
             gradient.addColorStop(1, hexToRgba(color, 0));
@@ -270,19 +324,13 @@
 
         let confidenceChart, distributionChart, avgConfChart, trendChart;
 
-        const refreshChartTheme = () => {
+        // Global refreshChartTheme — called by nav.js on theme toggle
+        window.refreshChartTheme = () => {
             applyChartTheme();
             [confidenceChart, distributionChart, avgConfChart, trendChart].forEach(chart => chart?.update());
         };
 
-        themeToggle?.addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-            refreshChartTheme();
-        });
-
         applyChartTheme();
-        lucide.createIcons();
 
         // === INIT CHARTS ===
 
@@ -303,7 +351,7 @@
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { maxTicksLimit: 12, maxRotation: 0, color: () => getChartTheme().text }
+                        ticks: { maxTicksLimit: 8, maxRotation: 0, color: () => getChartTheme().text }
                     }
                 },
                 elements: {
@@ -400,7 +448,7 @@
             try {
                 const sessionId = document.getElementById('sessionFilter').value;
                 const url = sessionId ? `/get_stats?session_id=${sessionId}` : '/get_stats';
-                const res = await fetch(url);
+                const res = await apiFetch(url);
                 const data = await res.json();
 
                 if (data.total_frames === 0) {
@@ -421,15 +469,13 @@
                     const sorted = Object.entries(data.classes).sort((a, b) => b[1] - a[1]);
                     document.getElementById('commonState').textContent = sorted[0][0].toUpperCase();
 
-                    // Update distribution chart
                     distributionChart.data.labels = sorted.map(c => c[0].toUpperCase());
                     distributionChart.data.datasets[0].data = sorted.map(c => c[1]);
                     distributionChart.data.datasets[0].backgroundColor = sorted.map(c =>
-                        CLASS_COLORS[c[0]]?.border || 'rgba(107, 114, 128, 1)'
+                        CLASS_COLORS[c[0]]?.hex || '#6b7280'
                     );
                     distributionChart.update();
 
-                    // Compute avg confidence per class from chart data
                     loadChartData();
                 }
             } catch (err) {
@@ -441,13 +487,12 @@
             try {
                 const sessionId = document.getElementById('sessionFilter').value;
                 const url = sessionId ? `/api/chart_data?session_id=${sessionId}` : '/api/chart_data';
-                const res = await fetch(url);
+                const res = await apiFetch(url);
                 const json = await res.json();
                 if (!json.success) return;
 
                 const data = json.data;
 
-                // Group by class for confidence chart
                 const classGroups = {};
                 data.labels.forEach((label, i) => {
                     const cls = data.classes[i];
@@ -456,21 +501,18 @@
                     classGroups[cls].data.push(data.confidence[i]);
                 });
 
-                // Confidence over time: single line colored by class
                 const timeLabels = data.labels.map(l => l.split('T')[1]?.substring(0, 8) || l);
                 confidenceChart.data.labels = timeLabels;
-                    confidenceChart.data.datasets = Object.entries(classGroups).map(([cls, d]) => ({
-                        label: cls.toUpperCase(),
-                        data: data.labels.map((l, i) => data.classes[i] === cls ? data.confidence[i] : null),
-                        borderColor: CLASS_COLORS[cls]?.hex || '#6b7280',
-                        backgroundColor: (context) => createFadeGradient(context.chart.ctx, context.chart.chartArea, CLASS_COLORS[cls]?.hex || '#6b7280'),
-                        spanGaps: false,
-                        fill: true
-                    }));
-                    confidenceChart.update();
+                confidenceChart.data.datasets = Object.entries(classGroups).map(([cls, d]) => ({
+                    label: cls.toUpperCase(),
+                    data: data.labels.map((l, i) => data.classes[i] === cls ? data.confidence[i] : null),
+                    borderColor: CLASS_COLORS[cls]?.hex || '#6b7280',
+                    backgroundColor: (context) => createFadeGradient(context.chart.ctx, context.chart.chartArea, CLASS_COLORS[cls]?.hex || '#6b7280'),
+                    spanGaps: false,
+                    fill: true
+                }));
+                confidenceChart.update();
 
-
-                // Average confidence by class
                 const avgByClass = {};
                 const countByClass = {};
                 data.classes.forEach((cls, i) => {
@@ -493,14 +535,13 @@
 
         async function loadSessions() {
             try {
-                const res = await fetch('/api/sessions');
+                const res = await apiFetch('/api/sessions');
                 const json = await res.json();
                 if (!json.success) return;
 
                 const sessions = json.sessions;
                 document.getElementById('sessionCount').textContent = sessions.length;
 
-                // Populate filter dropdown
                 const filter = document.getElementById('sessionFilter');
                 const current = filter.value;
                 filter.innerHTML = '<option value="">All Sessions</option>';
@@ -515,7 +556,6 @@
                 });
                 filter.value = current;
 
-                // Session history list
                 const history = document.getElementById('sessionHistory');
                 if (sessions.length === 0) {
                     history.innerHTML = '<p class="text-gray-400 dark:text-zinc-500 text-center py-6">No sessions yet</p>';
@@ -529,13 +569,13 @@
                     const scoreValue = s.attention_score || 0;
                     const scoreColor = scoreValue >= 70 ? 'text-emerald-600 dark:text-emerald-300' : scoreValue >= 40 ? 'text-amber-600 dark:text-amber-300' : 'text-rose-600 dark:text-rose-300';
                     return `
-                        <div class="flex items-center justify-between bg-white dark:bg-zinc-900/70 rounded-xl p-4 border border-gray-200 dark:border-white/10 hover:border-indigo-300 dark:hover:border-indigo-400/60 transition-all cursor-pointer" onclick="document.getElementById('sessionFilter').value='${s.id}'; refreshAll();">
-                            <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <div class="flex items-center justify-between bg-white dark:bg-zinc-900/70 rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-white/10 hover:border-indigo-300 dark:hover:border-indigo-400/60 transition-all cursor-pointer" onclick="document.getElementById('sessionFilter').value='${s.id}'; refreshAll();">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 <p class="text-xs text-gray-500 dark:text-zinc-400">${s.total_frames || 0} frames · ${durationStr}</p>
                             </div>
-                            <div class="text-right">
-                                <p class="text-xl font-semibold ${scoreColor}">${s.attention_score != null ? s.attention_score + '%' : '—'}</p>
+                            <div class="text-right ml-3 flex-shrink-0">
+                                <p class="text-lg sm:text-xl font-semibold ${scoreColor}">${s.attention_score != null ? s.attention_score + '%' : '—'}</p>
                                 <p class="text-[10px] text-gray-400 dark:text-zinc-500 uppercase">Attention</p>
                             </div>
                         </div>
@@ -549,7 +589,7 @@
 
         async function loadTrend() {
             try {
-                const res = await fetch('/api/session_scores');
+                const res = await apiFetch('/api/session_scores');
                 const json = await res.json();
                 if (!json.success || json.scores.length === 0) return;
 
@@ -572,10 +612,18 @@
 
         // === EXPORT ===
 
-        document.getElementById('exportBtn').addEventListener('click', () => {
+        document.getElementById('exportBtn').addEventListener('click', async () => {
             const sessionId = document.getElementById('sessionFilter').value;
             const url = sessionId ? `/api/export?session_id=${sessionId}` : '/api/export';
-            window.location.href = url;
+            try {
+                const res = await apiFetch(url);
+                if (!res.ok) { alert('No data to export'); return; }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `attentiveness_export_${sessionId || 'all'}.csv`;
+                a.click();
+            } catch (err) { console.error('Export error:', err); }
         });
 
         document.getElementById('refreshBtn').addEventListener('click', refreshAll);
@@ -590,7 +638,7 @@
         document.getElementById('clearHistoryBtn').addEventListener('click', async () => {
             if (!confirm('This will permanently delete all sessions and detection data. Continue?')) return;
             try {
-                const res = await fetch('/api/sessions', { method: 'DELETE' });
+                const res = await apiFetch('/api/sessions', { method: 'DELETE' });
                 const json = await res.json();
                 if (json.success) {
                     alert('All history cleared successfully.');
@@ -607,7 +655,7 @@
         document.getElementById('resetDashboardBtn').addEventListener('click', async () => {
             if (!confirm('This will clear all detection analytics data (sessions will be kept). Continue?')) return;
             try {
-                const res = await fetch('/api/detections', { method: 'DELETE' });
+                const res = await apiFetch('/api/detections', { method: 'DELETE' });
                 const json = await res.json();
                 if (json.success) {
                     alert('Dashboard data reset successfully.');

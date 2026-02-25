@@ -26,6 +26,14 @@ const blurText = document.getElementById('blurText');
 const detectionIntervalSelect = document.getElementById('detectionInterval');
 const alertSoundToggle = document.getElementById('alertSoundToggle');
 
+// === AUTH GUARD ===
+// Redirect to login if not authenticated
+if (typeof AUTH !== 'undefined' && !AUTH.requireAuth()) {
+    // Auth guard triggered redirect — halt script execution.
+    // We use a self-executing async to block without throw.
+    (async () => { await new Promise(() => { }); })();
+}
+
 // === STATE ===
 let stream = null;
 let isTracking = false;
@@ -36,13 +44,24 @@ let sessionStartTime = null;
 let timerInterval = null;
 let attentiveFrames = 0;
 let totalFrames = 0;
-let activeAbortController = null; // Prevent overlapping requests
+let activeAbortController = null;
 let consecutiveErrors = 0;
 const MAX_CONSECUTIVE_ERRORS = 5;
 const timelineSegments = [];
 const ALERT_CLASSES = ['sleepy', 'bored'];
 const ALERT_COOLDOWN_MS = 5000;
 let lastAlertSoundTime = 0;
+
+// Device ID for multi-device isolation
+const deviceId = localStorage.getItem('device_id') || (() => {
+    const id = crypto.randomUUID();
+    localStorage.setItem('device_id', id);
+    return id;
+})();
+
+// Video resolution (set dynamically after webcam starts)
+let videoWidth = 640;
+let videoHeight = 480;
 
 // Client-side smoothing buffer
 const clientBuffer = [];
@@ -59,7 +78,7 @@ const STATE_COLORS = {
 
 function updateStatus(message, type = 'info') {
     statusText.textContent = message;
-    statusDiv.className = 'mb-6 p-3 rounded-xl text-center font-medium text-sm transition-all duration-200';
+    statusDiv.className = 'mb-4 sm:mb-6 p-3 rounded-xl text-center font-medium text-sm transition-all duration-200';
 
     const styles = {
         success: 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300',
@@ -134,6 +153,17 @@ function stopSessionTimer() {
     timerInterval = null;
 }
 
+// === CANVAS SIZING ===
+
+function syncCanvasSize() {
+    if (video.videoWidth && video.videoHeight) {
+        videoWidth = video.videoWidth;
+        videoHeight = video.videoHeight;
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+    }
+}
+
 // === WEBCAM ===
 
 async function startWebcam() {
@@ -143,10 +173,18 @@ async function startWebcam() {
                 width: { ideal: 640 },
                 height: { ideal: 480 },
                 facingMode: 'user',
-                frameRate: { ideal: 15 } // Lower framerate to reduce CPU
+                frameRate: { ideal: 15 }
             }
         });
         video.srcObject = stream;
+
+        await new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+                syncCanvasSize();
+                resolve();
+            };
+        });
+
         return true;
     } catch (error) {
         console.error('Error accessing webcam:', error);
@@ -167,8 +205,28 @@ function stopWebcam() {
 
 function captureFrame() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    // Reduced quality 0.6 (from 0.8) for faster encode/transfer
     return canvas.toDataURL('image/jpeg', 0.6);
+}
+
+// === API HELPERS ===
+// Use AUTH.apiFetch for all API calls to include JWT token
+
+async function apiFetch(url, options = {}) {
+    if (typeof AUTH !== 'undefined') {
+        return AUTH.apiFetch(url, options);
+    }
+    // Fallback for no auth
+    return fetch(url, options);
+}
+
+// Safe wrapper: returns null on abort instead of throwing
+async function safeApiFetch(url, options = {}) {
+    try {
+        return await apiFetch(url, options);
+    } catch (err) {
+        if (err.name === 'AbortError') return null;
+        throw err;
+    }
 }
 
 // === DETECTION ===
@@ -176,7 +234,6 @@ function captureFrame() {
 async function detectAttentiveness() {
     if (!isTracking) return;
 
-    // Abort any in-flight request to prevent overlap
     if (activeAbortController) {
         activeAbortController.abort();
     }
@@ -185,29 +242,29 @@ async function detectAttentiveness() {
     try {
         const imageData = captureFrame();
 
-        const response = await fetch('/predict', {
+        const response = await safeApiFetch('/predict', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image: imageData, session_id: sessionId }),
             signal: activeAbortController.signal
         });
 
+        // Aborted — skip this frame
+        if (!response) return;
+
         if (!response.ok) throw new Error('Prediction request failed');
 
         const data = await response.json();
-        consecutiveErrors = 0; // Reset error counter on success
+        consecutiveErrors = 0;
 
         if (data.success) {
-            // Handle fully skipped frames (no previous state available)
             if (data.skipped) {
                 blurOverlay.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-mono bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/30';
                 blurText.textContent = `Frame blurred (${data.blur_score})`;
                 blurOverlay.classList.remove('hidden');
-                // DON'T return early — keep detection loop running
                 return;
             }
 
-            // Show blur indicator (reduced opacity) if blurry but using cached state
             if (data.blurry) {
                 blurOverlay.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-mono bg-amber-500/5 text-amber-600/70 dark:text-amber-200/70 border border-amber-500/20';
                 blurText.textContent = `Using cached frame (${data.blur_score})`;
@@ -220,7 +277,6 @@ async function detectAttentiveness() {
             totalFrames++;
             frameCountDisplay.textContent = frameCount;
 
-            // Clear canvas for fresh drawing
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (data.predictions && data.predictions.length > 0) {
@@ -240,7 +296,6 @@ async function detectAttentiveness() {
 
                     const colors = STATE_COLORS[smoothedClass] || STATE_COLORS.awake;
 
-                    // Draw bounding box with glow
                     ctx.shadowColor = colors.box;
                     ctx.shadowBlur = 15;
                     ctx.strokeStyle = colors.box;
@@ -250,7 +305,6 @@ async function detectAttentiveness() {
                     ctx.stroke();
                     ctx.shadowBlur = 0;
 
-                    // Draw label pill
                     const label = `${smoothedClass} ${Math.round(confidence * 100)}%`;
                     ctx.font = 'bold 13px Inter, sans-serif';
                     const textWidth = ctx.measureText(label).width;
@@ -266,23 +320,19 @@ async function detectAttentiveness() {
                     ctx.fillText(label, pillX + 8, pillY + 15);
                 });
 
-                // Update display with top prediction
                 if (topPred) {
                     const finalClass = clientSmooth(topPred.smoothedClass);
                     currentStateDisplay.textContent = finalClass.toUpperCase();
                     confidenceDisplay.textContent = Math.round(topPred.confidence * 100) + '%';
 
-                    // Apply state color
                     const stateColors = STATE_COLORS[finalClass] || STATE_COLORS.awake;
                     currentStateDisplay.className = `text-2xl font-bold ${stateColors.text}`;
 
-                    // Track attention
                     if (finalClass === 'awake') attentiveFrames++;
                     updateAttentionScore();
                     addTimelineSegment(finalClass);
                 }
 
-                // Handle alerts
                 if (data.trigger_alert) {
                     showAlert();
                 } else {
@@ -296,7 +346,7 @@ async function detectAttentiveness() {
             }
         }
     } catch (error) {
-        if (error.name === 'AbortError') return; // Intentional abort
+        if (error.name === 'AbortError') return;
 
         consecutiveErrors++;
         console.error('Detection error:', error);
@@ -304,7 +354,6 @@ async function detectAttentiveness() {
         if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
             updateStatus('Multiple errors detected. Retrying connection...', 'warning');
         }
-        // Keep detection loop running — don't crash on transient errors
     } finally {
         activeAbortController = null;
     }
@@ -336,7 +385,11 @@ function playAlertSound() {
 
 async function createSession() {
     try {
-        const res = await fetch('/api/sessions', { method: 'POST' });
+        const res = await apiFetch('/api/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: deviceId }),
+        });
         const data = await res.json();
         if (data.success) {
             sessionId = data.session_id;
@@ -353,7 +406,7 @@ async function createSession() {
 async function endCurrentSession() {
     if (!sessionId) return;
     try {
-        const res = await fetch(`/api/sessions/${sessionId}/end`, { method: 'POST' });
+        const res = await apiFetch(`/api/sessions/${sessionId}/end`, { method: 'POST' });
         const data = await res.json();
         if (data.success) {
             attentionScoreDisplay.textContent = data.attention_score;
@@ -414,7 +467,6 @@ async function stopDetection() {
     isTracking = false;
     clearInterval(detectionInterval);
 
-    // Abort any in-flight request
     if (activeAbortController) {
         activeAbortController.abort();
         activeAbortController = null;

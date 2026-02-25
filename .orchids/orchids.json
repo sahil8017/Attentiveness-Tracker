@@ -1,9 +1,0 @@
-{
-  "projectId": "0cd45719-e354-4477-8d16-e40ffd6fad52",
-  "createdAt": 1771927114026,
-  "version": "1.0",
-  "startupCommands": [
-    "C:\\PROJECT\\attentiveness_detection\\venv\\Scripts\\python.exe -m uvicorn main:app --host 0.0.0.0 --port 5000"
-  ],
-  "templateId": "any"
-}

@@ -1,6 +1,6 @@
 /* ============================================
    Attentiveness Tracker — Global Styles
-   Dark glassmorphism theme
+   Mobile-first dark glassmorphism theme
    ============================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -37,6 +37,11 @@ html {
     scroll-behavior: smooth;
 }
 
+/* Prevent horizontal scroll */
+html, body {
+    overflow-x: hidden;
+}
+
 /* Custom selection */
 ::selection {
     background: rgba(79, 70, 229, 0.2);
@@ -50,19 +55,11 @@ html {
 
 /* === VIDEO & CANVAS === */
 
-#webcam {
-    display: block;
-    border-radius: 0.75rem;
-    background: rgba(15, 23, 42, 0.2);
-}
-
-#canvas {
-    pointer-events: none;
-    border-radius: 0.75rem;
-}
-
 .hud-shell {
     position: relative;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 4 / 3;
     border-radius: 1rem;
     overflow: hidden;
     border: 1px solid transparent;
@@ -76,6 +73,25 @@ html {
 .hud-shell.hud-active {
     border-color: var(--hud-border);
     box-shadow: 0 0 20px var(--hud-glow);
+}
+
+#webcam {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0.75rem;
+    background: rgba(15, 23, 42, 0.2);
+}
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    border-radius: 0.75rem;
 }
 
 .hud-overlay {
@@ -92,6 +108,33 @@ html {
     border-color: rgba(255, 255, 255, 0.12);
     opacity: 0.45;
 }
+
+/* === CHART CONTAINERS === */
+
+.chart-container {
+    position: relative;
+    height: 250px;
+}
+
+.chart-container-lg {
+    position: relative;
+    height: 220px;
+}
+
+@media (min-width: 768px) {
+    .chart-container {
+        height: 300px;
+    }
+    .chart-container-lg {
+        height: 280px;
+    }
+}
+
+canvas {
+    max-width: 100%;
+}
+
+/* === TOOLTIP === */
 
 .chart-tooltip {
     position: absolute;
@@ -161,60 +204,55 @@ button:disabled {
 /* === ANIMATIONS === */
 
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes pulse-glow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
-    }
-
-    50% {
-        box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
-    }
+    0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
+    50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
 }
 
 @keyframes shimmer {
-    0% {
-        background-position: 200% 0;
-    }
-
-    100% {
-        background-position: -200% 0;
-    }
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
-.fade-in-up {
-    animation: fadeInUp 0.6s ease-out;
+@keyframes slideDown {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 300px; }
 }
 
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
+@keyframes slideUp {
+    from { opacity: 1; max-height: 300px; }
+    to { opacity: 0; max-height: 0; }
 }
+
+.fade-in-up { animation: fadeInUp 0.6s ease-out; }
+.fade-in { animation: fadeIn 0.5s ease-in; }
 
 /* Alert pulse */
 #alertMessage {
     animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* === MOBILE MENU === */
+
+.mobile-menu {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+.mobile-menu.open {
+    max-height: 300px;
+    opacity: 1;
 }
 
 /* === TIMELINE === */
@@ -225,12 +263,6 @@ button:disabled {
 
 #timeline div {
     transition: background-color 0.3s ease;
-}
-
-/* === CHART CONTAINERS === */
-
-canvas {
-    max-width: 100%;
 }
 
 /* === SELECT STYLING === */
@@ -248,13 +280,18 @@ select {
 }
 
 select option {
-    background: #ffffff;
-    color: #0f172a;
+    background-color: #ffffff;
+    color: #111827;
+    padding: 10px;
 }
 
 .dark select option {
-    background: #18181b;
+    background-color: #18181b;
     color: #f4f4f5;
+}
+
+select:focus {
+    outline: none;
 }
 
 /* === TOGGLE SWITCH === */
@@ -275,21 +312,6 @@ input[type="checkbox"]:checked+div {
     border-radius: 0.5rem;
 }
 
-/* === RESPONSIVE === */
-
-@media (max-width: 768px) {
-
-    #webcam,
-    #canvas {
-        max-width: 100%;
-        height: auto;
-    }
-
-    h2 {
-        font-size: 1.75rem;
-    }
-}
-
 /* === HOVER EFFECTS === */
 
 .group:hover .group-hover\:scale-110 {
@@ -303,23 +325,4 @@ input[type="checkbox"]:checked+div {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-}
-/* Improve select dropdown appearance */
-
-
-/* Better option styling */
-select option {
-    background-color: #ffffff;
-    color: #111827;
-    padding: 10px;
-}
-
-.dark select option {
-    background-color: #18181b;
-    color: #f4f4f5;
-}
-
-/* Remove ugly focus outline */
-select:focus {
-    outline: none;
 }
