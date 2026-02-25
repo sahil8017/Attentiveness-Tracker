@@ -7,6 +7,8 @@
 const video = document.getElementById('webcam');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const captureCanvas = document.createElement('canvas'); // Off-screen canvas for capturing frames
+const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
 const statusDiv = document.getElementById('status');
@@ -159,6 +161,16 @@ function syncCanvasSize() {
         videoHeight = video.videoHeight;
         canvas.width = videoWidth;
         canvas.height = videoHeight;
+        
+        // Sync off-screen canvas
+        captureCanvas.width = videoWidth;
+        captureCanvas.height = videoHeight;
+
+        // Dynamically set aspect ratio of the shell to match video stream perfectly (fixes mobile distortion)
+        const shell = document.querySelector('.hud-shell');
+        if (shell) {
+            shell.style.aspectRatio = `${videoWidth} / ${videoHeight}`;
+        }
     }
 }
 
@@ -183,6 +195,10 @@ async function startWebcam() {
             };
         });
 
+        // Handle dynamic resolution changes (e.g., when rotating phone)
+        video.addEventListener('resize', syncCanvasSize);
+
+
         return true;
     } catch (error) {
         console.error('Error accessing webcam:', error);
@@ -196,14 +212,15 @@ function stopWebcam() {
         stream.getTracks().forEach(track => track.stop());
         video.srcObject = null;
         stream = null;
+        video.removeEventListener('resize', syncCanvasSize);
     }
 }
 
 // === FRAME CAPTURE ===
 
 function captureFrame() {
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.6);
+    captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+    return captureCanvas.toDataURL('image/jpeg', 0.6);
 }
 
 // === API HELPERS ===
