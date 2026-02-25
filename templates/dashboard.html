@@ -637,7 +637,11 @@
         document.getElementById('clearHistoryBtn').addEventListener('click', async () => {
             if (!confirm('This will permanently delete all sessions and detection data. Continue?')) return;
             try {
-                const res = await apiFetch('/api/sessions', { method: 'DELETE' });
+                const res = await apiFetch('/api/sessions', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
                 const json = await res.json();
                 if (json.success) {
                     alert('All history cleared successfully.');
@@ -654,7 +658,11 @@
         document.getElementById('resetDashboardBtn').addEventListener('click', async () => {
             if (!confirm('This will clear all detection analytics data (sessions will be kept). Continue?')) return;
             try {
-                const res = await apiFetch('/api/detections', { method: 'DELETE' });
+                const res = await apiFetch('/api/detections', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
                 const json = await res.json();
                 if (json.success) {
                     alert('Dashboard data reset successfully.');

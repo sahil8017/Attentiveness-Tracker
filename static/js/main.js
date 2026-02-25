@@ -394,7 +394,9 @@ async function createSession() {
 
     try {
         const response = await apiFetch("/api/sessions", {
-            method: "POST"
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: deviceId })
         });
 
         if (!response) return null; // Aborted or 401 triggered redirect
@@ -417,7 +419,11 @@ async function createSession() {
 async function endCurrentSession() {
     if (!sessionId) return;
     try {
-        const res = await apiFetch(`/api/sessions/${sessionId}/end`, { method: 'POST' });
+        const res = await apiFetch(`/api/sessions/${sessionId}/end`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
         if (!res) return; // aborted or redirect
         const data = await res.json();
         if (data.success) {
