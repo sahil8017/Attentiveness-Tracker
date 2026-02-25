@@ -1,10 +1,10 @@
 """
 Database engine and session factory for Attentiveness Tracker.
-Supports SQLite (dev) and PostgreSQL (production) via DATABASE_URL.
+PostgreSQL only — configured via DATABASE_URL environment variable.
 """
 
 import logging
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Base
 
@@ -16,54 +16,21 @@ _SessionLocal = None
 
 def init_db(database_url: str):
     """
-    Initialize database engine and create tables.
+    Initialize PostgreSQL database engine and create tables.
     Call once at app startup.
-
-    If the existing database has stale tables (missing columns from
-    the new schema), they are dropped and recreated to avoid
-    OperationalError on INSERT.
     """
     global _engine, _SessionLocal
 
-    connect_args = {}
-    if database_url.startswith("sqlite"):
-        connect_args["check_same_thread"] = False
-
     _engine = create_engine(
         database_url,
-        connect_args=connect_args,
         echo=False,
         pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
     )
 
-    # --- Schema migration: detect stale tables ---
-    try:
-        inspector = inspect(_engine)
-        existing_tables = inspector.get_table_names()
-
-        # Check if 'sessions' table exists but is missing new columns
-        if "sessions" in existing_tables:
-            columns = {col["name"] for col in inspector.get_columns("sessions")}
-            required = {"user_id", "device_id"}
-            missing = required - columns
-            if missing:
-                logger.warning(
-                    f"Stale 'sessions' table detected (missing: {missing}). "
-                    "Dropping old tables and recreating with new schema."
-                )
-                Base.metadata.drop_all(bind=_engine)
-
-        # Check if 'users' table is missing entirely (pre-auth database)
-        if "sessions" in existing_tables and "users" not in existing_tables:
-            logger.warning("Pre-auth database detected. Dropping old tables.")
-            Base.metadata.drop_all(bind=_engine)
-
-    except Exception as e:
-        logger.warning(f"Schema inspection failed (will attempt create_all): {e}")
-
-    # Create all tables (new or after drop)
     Base.metadata.create_all(bind=_engine)
-    logger.info("Database tables verified/created successfully.")
+    logger.info("PostgreSQL database initialized, tables verified.")
 
     _SessionLocal = sessionmaker(
         autocommit=False,

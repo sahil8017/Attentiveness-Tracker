@@ -13,8 +13,7 @@ __pycache__/
 .vscode/
 .idea/
 
-# Data (will be volume-mounted)
-*.db
+# Data (runtime only)
 attentiveness_log.csv
 logs/
 temp/
@@ -26,7 +25,7 @@ docker-compose*.yml
 
 # Docs
 README.md
-*.md
 
 # Misc
 .env.example
+.pytest_cache/

@@ -1,29 +1,55 @@
 # ==========================================
-# Attentiveness Tracker — Docker Compose (Dev)
+# Attentiveness Tracker — Docker Compose
+# FASTAPI (app) + POSTGRES (db) + NGINX (proxy)
 # ==========================================
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: attentiveness-db
+    environment:
+      POSTGRES_USER: attentiveness
+      POSTGRES_PASSWORD: attentiveness_dev
+      POSTGRES_DB: attentiveness
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U attentiveness"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: attentiveness-tracker
-    ports:
-      - "5000:5000"
+    container_name: attentiveness-app
+    expose:
+      - "5000"
     env_file:
       - .env
-    volumes:
-      # Persist SQLite database
-      - ./data:/app/data
-      # Persist logs
-      - ./logs:/app/logs
     environment:
-      - DATABASE_NAME=data/attentiveness.db
+      - DATABASE_URL=postgresql://attentiveness:attentiveness_dev@db:5432/attentiveness
       - DEBUG=true
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import httpx; r = httpx.get('http://localhost:5000/health'); r.raise_for_status()"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
+
+  nginx:
+    image: nginx:alpine
+    container_name: attentiveness-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  pgdata:

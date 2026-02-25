@@ -382,7 +382,8 @@ def clear_all_detections(
 
 # --- Prediction (protected) ---
 
-@app.post("/predict")
+@app.post("/api/predict")
+@app.post("/predict")  # Fallback for cached clients
 async def predict(
     data: PredictRequest,
     current_user: User = Depends(get_current_user),
@@ -408,7 +409,11 @@ async def predict(
             frame_counters[session_id] = 0
 
         # Decode base64 image
-        img_data = data.image.split(",")[1]
+        img_data = data.image.split(",")[1] if "," in data.image else data.image
+        # Add padding if needed
+        missing_padding = len(img_data) % 4
+        if missing_padding:
+            img_data += "=" * (4 - missing_padding)
         img_bytes = base64.b64decode(img_data)
         nparr = np.frombuffer(img_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -484,6 +489,28 @@ async def predict(
 
         db.commit()
 
+        # Update Session-level stats in real-time
+        try:
+            # Count total detections for this session
+            total_dets = db.query(Detection.id).filter(Detection.session_id == session_id).count()
+            # Count 'engaged' detections (case-insensitive)
+            engaged_dets = db.query(Detection.id).filter(
+                Detection.session_id == session_id,
+                Detection.class_name == "engaged"
+            ).count()
+
+            # Attention score = (engaged detections / total detections) * 100
+            new_score = round((engaged_dets / total_dets * 100), 1) if total_dets > 0 else 0
+
+            # Update session record
+            session.total_frames = frame_id  # Tracking frames processed
+            session.attention_score = new_score
+            db.commit()
+            logger.info(f"Session {session_id} stats updated: frames={frame_id}, score={new_score}%")
+        except Exception as e:
+            logger.error(f"Error updating session stats: {e}")
+            db.rollback()
+
         # Store last known state for blur fallback
         last_known_states[session_id] = {
             "predictions": processed_predictions,
@@ -522,7 +549,8 @@ async def predict(
 
 # --- Analytics (protected) ---
 
-@app.get("/get_stats")
+@app.get("/api/get_stats")
+@app.get("/get_stats")  # Fallback for cached clients
 def get_stats(
     session_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
@@ -545,7 +573,7 @@ def get_stats(
 
         q = db.query(
             func.count(Detection.id).label("total_frames"),
-            func.round(func.avg(Detection.confidence), 3).label("avg_confidence"),
+            func.avg(Detection.confidence).label("avg_confidence"),
         ).filter(Detection.session_id.in_(user_session_ids)).first()
 
         class_rows = db.query(
@@ -557,7 +585,7 @@ def get_stats(
 
         return {
             "total_frames": q.total_frames or 0,
-            "avg_confidence": float(q.avg_confidence or 0),
+            "avg_confidence": round(float(q.avg_confidence or 0), 3),
             "classes": {r.class_name: r.count for r in class_rows},
         }
     except Exception as e:
@@ -566,6 +594,7 @@ def get_stats(
 
 
 @app.get("/api/chart_data")
+@app.get("/chart_data")  # Fallback for cached clients
 def chart_data(
     session_id: Optional[str] = None,
     limit: int = 500,
@@ -595,7 +624,7 @@ def chart_data(
         return {
             "success": True,
             "data": {
-                "labels": [d.timestamp.isoformat() if d.timestamp else "" for d in data],
+                "labels": [d.timestamp.strftime("%Y-%m-%dT%H:%M:%SZ") if d.timestamp else "" for d in data],
                 "confidence": [d.confidence for d in data],
                 "classes": [d.smoothed_class or d.class_name for d in data],
                 "frame_ids": [d.frame_id for d in data],

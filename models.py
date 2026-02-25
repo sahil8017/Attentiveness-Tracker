@@ -51,8 +51,8 @@ class Session(Base):
             "id": self.id,
             "user_id": self.user_id,
             "device_id": self.device_id,
-            "start_time": self.start_time.isoformat() if self.start_time else None,
-            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "start_time": self.start_time.strftime("%Y-%m-%dT%H:%M:%SZ") if self.start_time else None,
+            "end_time": self.end_time.strftime("%Y-%m-%dT%H:%M:%SZ") if self.end_time else None,
             "total_frames": self.total_frames,
             "attention_score": self.attention_score,
         }
@@ -80,7 +80,7 @@ class Detection(Base):
 
     def to_dict(self):
         return {
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "timestamp": self.timestamp.strftime("%Y-%m-%dT%H:%M:%SZ") if self.timestamp else None,
             "class": self.class_name,
             "confidence": self.confidence,
             "frame_id": self.frame_id,

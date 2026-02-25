@@ -69,7 +69,7 @@ const CLIENT_BUFFER_SIZE = 5;
 
 // Color map for states
 const STATE_COLORS = {
-    awake: { bg: 'from-emerald-500/20 to-emerald-500/5', text: 'text-emerald-600 dark:text-emerald-300', box: '#34d399', timeline: '#34d399' },
+    engaged: { bg: 'from-emerald-500/20 to-emerald-500/5', text: 'text-emerald-600 dark:text-emerald-300', box: '#34d399', timeline: '#34d399' },
     sleepy: { bg: 'from-amber-500/20 to-amber-500/5', text: 'text-amber-600 dark:text-amber-300', box: '#fbbf24', timeline: '#fbbf24' },
     bored: { bg: 'from-rose-500/20 to-rose-500/5', text: 'text-rose-600 dark:text-rose-300', box: '#fb7185', timeline: '#fb7185' }
 };
@@ -242,7 +242,7 @@ async function detectAttentiveness() {
     try {
         const imageData = captureFrame();
 
-        const response = await safeApiFetch('/predict', {
+        const response = await safeApiFetch('/api/predict', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image: imageData, session_id: sessionId }),
@@ -294,7 +294,7 @@ async function detectAttentiveness() {
                         topPred = { ...pred, smoothedClass: smoothedClass };
                     }
 
-                    const colors = STATE_COLORS[smoothedClass] || STATE_COLORS.awake;
+                    const colors = STATE_COLORS[smoothedClass] || STATE_COLORS.engaged;
 
                     ctx.shadowColor = colors.box;
                     ctx.shadowBlur = 15;
@@ -325,10 +325,10 @@ async function detectAttentiveness() {
                     currentStateDisplay.textContent = finalClass.toUpperCase();
                     confidenceDisplay.textContent = Math.round(topPred.confidence * 100) + '%';
 
-                    const stateColors = STATE_COLORS[finalClass] || STATE_COLORS.awake;
+                    const stateColors = STATE_COLORS[finalClass] || STATE_COLORS.engaged;
                     currentStateDisplay.className = `text-2xl font-bold ${stateColors.text}`;
 
-                    if (finalClass === 'awake') attentiveFrames++;
+                    if (finalClass === 'engaged') attentiveFrames++;
                     updateAttentionScore();
                     addTimelineSegment(finalClass);
                 }

@@ -1,6 +1,6 @@
 """
 Centralized configuration for Attentiveness Tracker.
-Loads settings from environment variables with sensible defaults.
+Loads settings from environment variables. PostgreSQL required.
 """
 import os
 from pathlib import Path
@@ -27,14 +27,8 @@ class Config:
     ROBOFLOW_PROJECT = os.getenv("ROBOFLOW_PROJECT", "attention50k")
     ROBOFLOW_VERSION = int(os.getenv("ROBOFLOW_VERSION", "3"))
 
-    # Database — supports SQLite (dev) and PostgreSQL (production)
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL",
-        f"sqlite:///{BASE_DIR / os.getenv('DATABASE_NAME', 'attentiveness.db')}"
-    )
-
-    # Legacy (kept for backward compatibility)
-    DATABASE_PATH = BASE_DIR / os.getenv("DATABASE_NAME", "attentiveness.db")
+    # Database — PostgreSQL only (no SQLite fallback)
+    DATABASE_URL = os.getenv("DATABASE_URL", "")
 
     # JWT Authentication
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
@@ -64,6 +58,15 @@ class Config:
             raise ValueError(
                 "ROBOFLOW_API_KEY is required. Set it in .env file or as an environment variable."
             )
+
+        if not cls.DATABASE_URL:
+            raise ValueError(
+                "DATABASE_URL is required. Example: postgresql://user:pass@localhost:5432/attentiveness"
+            )
+
+        # Render uses postgres:// but SQLAlchemy needs postgresql://
+        if cls.DATABASE_URL.startswith("postgres://"):
+            cls.DATABASE_URL = cls.DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
         # Ensure directories exist
         cls.PLOTS_DIR.mkdir(parents=True, exist_ok=True)
