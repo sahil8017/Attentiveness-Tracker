@@ -384,38 +384,41 @@ function playAlertSound() {
 // === SESSION MANAGEMENT ===
 
 async function createSession() {
-    const token = localStorage.getItem("token");
+    const token = typeof AUTH !== 'undefined' ? AUTH.getToken() : null;
 
     if (!token) {
-        window.location.href = "/login";
+        if (typeof AUTH !== 'undefined') AUTH.logout();
+        else window.location.href = "/login";
         return null;
     }
 
-    const response = await fetch("/api/sessions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+    try {
+        const response = await apiFetch("/api/sessions", {
+            method: "POST"
+        });
+
+        if (!response) return null; // Aborted or 401 triggered redirect
+
+        if (!response.ok) {
+            throw new Error("Failed to create session");
         }
-    });
 
-    if (response.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        const data = await response.json();
+        if (data.success && data.session_id) {
+            sessionId = data.session_id;
+        }
+        return data;
+    } catch (e) {
+        console.error("Session creation error:", e);
         return null;
     }
-
-    if (!response.ok) {
-        throw new Error("Failed to create session");
-    }
-
-    return await response.json();
 }
 
 async function endCurrentSession() {
     if (!sessionId) return;
     try {
         const res = await apiFetch(`/api/sessions/${sessionId}/end`, { method: 'POST' });
+        if (!res) return; // aborted or redirect
         const data = await res.json();
         if (data.success) {
             attentionScoreDisplay.textContent = data.attention_score;
