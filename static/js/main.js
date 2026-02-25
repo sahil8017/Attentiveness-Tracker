@@ -29,9 +29,7 @@ const alertSoundToggle = document.getElementById('alertSoundToggle');
 // === AUTH GUARD ===
 // Redirect to login if not authenticated
 if (typeof AUTH !== 'undefined' && !AUTH.requireAuth()) {
-    // Auth guard triggered redirect — halt script execution.
-    // We use a self-executing async to block without throw.
-    (async () => { await new Promise(() => { }); })();
+    throw new Error('Redirecting to login');
 }
 
 // === STATE ===

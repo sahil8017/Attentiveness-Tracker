@@ -25,6 +25,7 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import func
@@ -151,6 +152,15 @@ app = FastAPI(
     description="AI-powered real-time focus monitoring with multi-user auth",
     version="3.0.0",
     lifespan=lifespan
+)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Mount static files

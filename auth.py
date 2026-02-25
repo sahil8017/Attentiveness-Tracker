@@ -49,7 +49,7 @@ def get_current_user(
     Raises 401 if token is missing or invalid.
     """
     if creds is None:
-        logger.debug("AUTH: No credentials provided (missing Authorization header)")
+        logger.error("AUTH ERROR: No credentials provided (missing Authorization header)")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
@@ -57,19 +57,23 @@ def get_current_user(
         )
 
     try:
+        # Debugging hook: print the first few chars of the token
+        token_preview = creds.credentials[:15] + "..." if len(creds.credentials) > 15 else creds.credentials
+        logger.debug(f"AUTH: Attempting to decode token starting with: {token_preview}")
+        
         payload = jwt.decode(creds.credentials, Config.JWT_SECRET_KEY, algorithms=[Config.JWT_ALGORITHM])
         sub = payload.get("sub")
         if sub is None:
-            logger.warning("AUTH: Token payload missing 'sub' claim")
+            logger.error("AUTH ERROR: Token payload missing 'sub' claim")
             raise HTTPException(status_code=401, detail="Invalid token")
         user_id = int(sub)
     except (JWTError, ValueError) as e:
-        logger.warning(f"AUTH: JWT decode failed: {e}")
+        logger.error(f"AUTH ERROR: JWT decode failed: {e}. Token: {creds.credentials[:10]}...")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
-        logger.warning(f"AUTH: User id={user_id} not found in database")
+        logger.error(f"AUTH ERROR: User id={user_id} not found in database")
         raise HTTPException(status_code=401, detail="User not found")
 
     logger.debug(f"AUTH: Authenticated user id={user.id} email={user.email}")
