@@ -161,7 +161,7 @@ function syncCanvasSize() {
         videoHeight = video.videoHeight;
         canvas.width = videoWidth;
         canvas.height = videoHeight;
-        
+
         // Sync off-screen canvas
         captureCanvas.width = videoWidth;
         captureCanvas.height = videoHeight;
@@ -178,10 +178,11 @@ function syncCanvasSize() {
 
 async function startWebcam() {
     try {
+        const isPortrait = window.innerHeight > window.innerWidth;
         stream = await navigator.mediaDevices.getUserMedia({
             video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
+                width: isPortrait ? { ideal: 480 } : { ideal: 640 },
+                height: isPortrait ? { ideal: 640 } : { ideal: 480 },
                 facingMode: 'user',
                 frameRate: { ideal: 15 }
             }
