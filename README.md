@@ -1,6 +1,6 @@
----
+﻿---
 title: Attentiveness Tracker
-emoji: ??
+emoji: 📊
 colorFrom: indigo
 colorTo: gray
 sdk: docker
@@ -8,7 +8,7 @@ pinned: false
 ---
 <div align="center">
   
-# 🎯 Attentiveness Tracker
+# ðŸŽ¯ Attentiveness Tracker
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Roboflow](https://img.shields.io/badge/Roboflow-6200EE?style=for-the-badge&logo=roboflow&logoColor=white)](https://roboflow.com/)
@@ -22,17 +22,17 @@ An AI-powered, real-time focus monitoring application that analyzes webcam feeds
 
 ---
 
-## ✨ Outstanding Features
+## âœ¨ Outstanding Features
 
-- **⚡ Real-time Detection:** Millisecond-level inference using the Roboflow Inference API (RF-DETR Nano model).
-- **🛡️ Temporal Smoothing:** Advanced algorithmic voting across consecutive frames completely eliminates erratic flickering and false positive detections.
-- **📱 True Cross-Device Support:** Dynamic camera orientation ensures perfect aspect ratios and zero "squishing" on mobile devices and variable screens.
-- **🔔 Smart Audio Alerts:** Configurable, non-intrusive alerts that trigger *only* after sustained periods of inattention to keep you focused.
-- **📊 Interactive Analytics:** Beautiful Chart.js dashboards showing live confidence trends, class distributions, and historical session scoring.
-- **🔐 Secure Authentication:** JWT-based user authentication securely tracking individual sessions, backed by a robust PostgreSQL database.
-- **🐳 Production Ready:** Fully containerized with Docker and Docker Compose for instant, reproducible deployments across any environment.
+- **âš¡ Real-time Detection:** Millisecond-level inference using the Roboflow Inference API (RF-DETR Nano model).
+- **ðŸ›¡ï¸ Temporal Smoothing:** Advanced algorithmic voting across consecutive frames completely eliminates erratic flickering and false positive detections.
+- **ðŸ“± True Cross-Device Support:** Dynamic camera orientation ensures perfect aspect ratios and zero "squishing" on mobile devices and variable screens.
+- **ðŸ”” Smart Audio Alerts:** Configurable, non-intrusive alerts that trigger *only* after sustained periods of inattention to keep you focused.
+- **ðŸ“Š Interactive Analytics:** Beautiful Chart.js dashboards showing live confidence trends, class distributions, and historical session scoring.
+- **ðŸ” Secure Authentication:** JWT-based user authentication securely tracking individual sessions, backed by a robust PostgreSQL database.
+- **ðŸ³ Production Ready:** Fully containerized with Docker and Docker Compose for instant, reproducible deployments across any environment.
 
-## 🛠️ Technology Stack
+## ðŸ› ï¸ Technology Stack
 
 ### Backend Core
 - **Framework:** FastAPI (High-performance, async Python web framework)
@@ -54,7 +54,7 @@ An AI-powered, real-time focus monitoring application that analyzes webcam feeds
 
 ---
 
-## 🚀 Quick Start Guide
+## ðŸš€ Quick Start Guide
 
 ### Prerequisites
 - [Docker](https://docs.docker.com/get-docker/) & Docker Compose
@@ -84,13 +84,13 @@ An AI-powered, real-time focus monitoring application that analyzes webcam feeds
 
 ---
 
-## ⚙️ Configuration Reference
+## âš™ï¸ Configuration Reference
 
 All core settings are easily managed via the `.env` configuration file:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `ROBOFLOW_API_KEY` | **Required.** Your API key for model inference. | — |
+| `ROBOFLOW_API_KEY` | **Required.** Your API key for model inference. | â€” |
 | `DATABASE_URL` | PostgreSQL connection string. | `postgresql://user:pass@db:5432/attentiveness` |
 | `SECRET_KEY` | Secret key used for cryptographic JWT signing. | *Generate a secure hash* |
 | `CONFIDENCE_THRESHOLD` | Minimum percentage confidence required for a valid bounding box detection. | `40` |
@@ -99,7 +99,7 @@ All core settings are easily managed via the `.env` configuration file:
 
 ---
 
-## 🏗️ System Architecture
+## ðŸ—ï¸ System Architecture
 
 The application is built on a high-performance asynchronous, non-blocking architecture. 
 1. The frontend client captures video frames using extremely optimized, dynamic HTML5 off-screen Canvas elements, safely transmitting compressed JPEG buffers to the FastAPI backend. 
@@ -108,7 +108,7 @@ The application is built on a high-performance asynchronous, non-blocking archit
 
 ---
 
-## 🤝 Special Acknowledgements
+## ðŸ¤ Special Acknowledgements
 
 This final version marks the successful conclusion of development. A massive thank you to the AI assistants that helped architect, build, refactor, and scale this application from a simple Flask script into a production-grade FastAPI monolith:
 
@@ -119,6 +119,6 @@ This final version marks the successful conclusion of development. A massive tha
 ---
 
 <div align="center">
-  <i>Built with ❤️ for better focus and elevated productivity.</i>
+  <i>Built with â¤ï¸ for better focus and elevated productivity.</i>
 </div>
 
