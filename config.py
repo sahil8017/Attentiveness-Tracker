@@ -23,9 +23,9 @@ class Config:
     DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
     # Roboflow API
-    ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY", "")
-    ROBOFLOW_PROJECT = os.getenv("ROBOFLOW_PROJECT", "attention50k")
-    ROBOFLOW_VERSION = int(os.getenv("ROBOFLOW_VERSION", "3"))
+    ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY", "").strip()
+    ROBOFLOW_PROJECT = os.getenv("ROBOFLOW_PROJECT", "attention50k").strip()
+    ROBOFLOW_VERSION = int(os.getenv("ROBOFLOW_VERSION", "3").strip())
 
     # Database — PostgreSQL only (no SQLite fallback)
     DATABASE_URL = os.getenv("DATABASE_URL", "")
