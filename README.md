@@ -1,6 +1,6 @@
 ﻿---
 title: Attentiveness Tracker
-emoji: ??
+emoji: "📊"
 colorFrom: indigo
 colorTo: gray
 sdk: docker
